@@ -1,7 +1,7 @@
 use std::{ffi::OsStr, io, path::Path, process::ExitStatus};
 
 use crate::{
-    command::{Command as InnerCommand},
+    command::{Command as InnerCommand, Stdio},
     process::Process,
 };
 
@@ -84,7 +84,8 @@ impl Command {
     // }
 
     pub fn spawn(&mut self) -> io::Result<Process> {
-        self.inner.spawn()
+        let (proc, _) = self.inner.spawn_internal(Stdio::Inherit, false)?;
+        Ok(proc)
     }
 
     /// Executes the command as a child process, waiting for it to finish and

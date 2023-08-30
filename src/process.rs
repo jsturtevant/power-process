@@ -1,3 +1,4 @@
+use crate::handle::Handle;
 use crate::pipe::read2;
 use crate::{c, command::StdioPipes};
 use cvt::cvt;
@@ -5,7 +6,7 @@ use std::io::Error;
 use std::{
     io,
     os::windows::{
-        prelude::{AsHandle, AsRawHandle, BorrowedHandle, OwnedHandle},
+        prelude::{AsHandle, AsRawHandle, BorrowedHandle},
         process::ExitStatusExt,
     },
     process::ExitStatus,
@@ -21,8 +22,8 @@ use std::{
 /// process - the Process destructor calls self.finish() which waits
 /// for the process to terminate.
 pub struct Process {
-    pub(crate) handle: OwnedHandle,
-    pub(crate) main_thread_handle: OwnedHandle,
+    pub(crate) handle: Handle,
+    pub(crate) main_thread_handle: Handle,
 }
 
 impl Process {
@@ -86,7 +87,7 @@ impl Process {
         self.handle.as_handle()
     }
 
-    pub fn into_handle(self) -> OwnedHandle {
+    pub fn into_handle(self) -> Handle {
         self.handle
     }
 }

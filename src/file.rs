@@ -1,7 +1,7 @@
 use std::{
     fs::File,
     io,
-    os::windows::prelude::{HandleOrInvalid, OwnedHandle, RawHandle},
+    os::windows::prelude::{RawHandle, FromRawHandle},
     path::Path,
     ptr,
 };
@@ -21,9 +21,8 @@ pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<File> {
             0,
         )
     };
-    let handle = unsafe { HandleOrInvalid::from_raw_handle(handle as RawHandle) };
-    if let Ok(handle) = OwnedHandle::try_from(handle) {
-        Ok(File::from(handle))
+    if handle != c::INVALID_HANDLE_VALUE {
+        unsafe {Ok(File::from_raw_handle(handle as RawHandle)) }
     } else {
         Err(io::Error::last_os_error())
     }

@@ -7,13 +7,13 @@ use crate::pipe::{self, AnonPipe};
 use crate::process::Process;
 use crate::{c, windows};
 use cvt::cvt;
-use windows_sys::Win32::Foundation::HANDLE as ISIZE_HANDLE;
 use std::collections::BTreeMap;
 use std::env::consts::{EXE_EXTENSION, EXE_SUFFIX};
 use std::ffi::{c_void, OsStr, OsString};
+use std::fs::File;
 use std::os::windows::prelude::{
-    AsRawHandle, FromRawHandle, HandleOrInvalid, IntoRawHandle, OsStrExt, OsStringExt,
-    OwnedHandle, RawHandle,
+    AsRawHandle, FromRawHandle, IntoRawHandle, OsStrExt, OsStringExt,
+    RawHandle,
 };
 use std::path::{Path, PathBuf};
 use std::process::ExitStatus;
@@ -176,17 +176,12 @@ impl Command {
 
         let _guard = CREATE_PROCESS_LOCK.lock();
 
-        let mut pipes = StdioPipes {
-            stdin: None,
-            stdout: None,
-            stderr: None,
-        };
+        let mut pipes = StdioPipes { stdin: None, stdout: None, stderr: None };
         let null = Stdio::Null;
         let default_stdin = if needs_stdin { &default } else { &null };
         let stdin = self.stdin.as_ref().unwrap_or(default_stdin);
         let stdout = self.stdout.as_ref().unwrap_or(&default);
         let stderr = self.stderr.as_ref().unwrap_or(&default);
-
         let stdin = stdin.to_handle(c::STD_INPUT_HANDLE, &mut pipes.stdin)?;
         let stdout = stdout.to_handle(c::STD_OUTPUT_HANDLE, &mut pipes.stdout)?;
         let stderr = stderr.to_handle(c::STD_ERROR_HANDLE, &mut pipes.stderr)?;
@@ -201,9 +196,9 @@ impl Command {
         let is_set = |stdio: &Handle| !stdio.as_raw_handle().is_null();
         if is_set(&stderr) || is_set(&stdout) || is_set(&stdin) {
             si.dwFlags |= c::STARTF_USESTDHANDLES;
-            si.hStdInput = stdin.as_raw_handle() as isize;
-            si.hStdOutput = stdout.as_raw_handle() as isize;
-            si.hStdError = stderr.as_raw_handle() as isize;
+            si.hStdInput = stdin.as_raw_handle();
+            si.hStdOutput = stdout.as_raw_handle();
+            si.hStdError = stderr.as_raw_handle();
         }
 
         unsafe {
@@ -224,17 +219,39 @@ impl Command {
         unsafe {
             Ok((
                 Process {
-                    handle: OwnedHandle::from_raw_handle(pi.hProcess as RawHandle),
-                    main_thread_handle: OwnedHandle::from_raw_handle(pi.hThread as RawHandle),
+                    handle: Handle::from_raw_handle(pi.hProcess as RawHandle),
+                    main_thread_handle: Handle::from_raw_handle(pi.hThread as RawHandle),
                 },
                 pipes,
+
             ))
         }
     }
 
     pub fn output(&mut self) -> io::Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
-        let (proc, pipes) = self.spawn_internal(Stdio::Null, false)?;
+        let (proc, pipes) = self.spawn_internal(Stdio::MakePipe, false)?;
         crate::process::wait_with_output(proc, pipes)
+    }
+}
+
+fn std_name(stdio_id: c::DWORD) -> &'static str {
+    match stdio_id {
+        c::STD_INPUT_HANDLE => "stdin",
+        c::STD_OUTPUT_HANDLE => "stdout",
+        c::STD_ERROR_HANDLE => "stderr",
+        _ => "unknown",
+    }
+}
+
+impl From<AnonPipe> for Stdio {
+    fn from(pipe: AnonPipe) -> Stdio {
+        Stdio::Pipe(pipe)
+    }
+}
+
+impl From<File> for Stdio {
+    fn from(file: File) -> Stdio {
+        unsafe {Stdio::Handle(Handle::from_raw_handle(file.as_raw_handle()))}
     }
 }
 
@@ -254,14 +271,14 @@ impl Stdio {
 
             Stdio::MakePipe => {
                 let ours_readable = stdio_id != c::STD_INPUT_HANDLE;
-                let pipes = pipe::anon_pipe(ours_readable, true)?;
+                let pipes = pipe::anon_pipe(ours_readable, true, std_name(stdio_id))?;
                 *pipe = Some(pipes.ours);
                 Ok(pipes.theirs.into_handle())
             }
 
             Stdio::Pipe(ref source) => {
                 let ours_readable = stdio_id != c::STD_INPUT_HANDLE;
-                pipe::spawn_pipe_relay(source, ours_readable, true).map(AnonPipe::into_handle)
+                pipe::spawn_pipe_relay(source, ours_readable, true, std_name(stdio_id)).map(AnonPipe::into_handle)
             }
 
             Stdio::Handle(ref handle) => handle.duplicate(0, true, c::DUPLICATE_SAME_ACCESS),
@@ -281,12 +298,7 @@ impl Stdio {
                 opts.write(stdio_id != c::STD_INPUT_HANDLE);
                 opts.security_attributes(&mut sa);
                 let file = open(Path::new("NUL"), &opts)?;
-                let handle = unsafe { HandleOrInvalid::from_raw_handle(file.as_raw_handle()) };
-                if let Ok(handle) = OwnedHandle::try_from(handle) {
-                    Ok(Handle(handle))
-                } else {
-                    Err(io::Error::last_os_error())
-                }
+                unsafe {Ok(Handle::from_raw_handle(file.as_raw_handle()))}
             }
         }
     }
@@ -370,16 +382,16 @@ fn zeroed_startupinfo() -> c::STARTUPINFOW {
         wShowWindow: 0,
         cbReserved2: 0,
         lpReserved2: ptr::null_mut(),
-        hStdInput: 0_isize,
-        hStdOutput: 0_isize,
-        hStdError: 0_isize,
+        hStdInput: ptr::null_mut(),
+        hStdOutput: ptr::null_mut(),
+        hStdError: ptr::null_mut(),
     }
 }
 
 fn zeroed_process_information() -> c::PROCESS_INFORMATION {
     c::PROCESS_INFORMATION {
-        hProcess: 0_isize,
-        hThread: 0_isize,
+        hProcess: ptr::null_mut(),
+        hThread: ptr::null_mut(),
         dwProcessId: 0,
         dwThreadId: 0,
     }

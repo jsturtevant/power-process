@@ -21,27 +21,36 @@ mod wstr;
 
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
+    
 
     use super::*;
 
     #[test]
     fn it_works() {
         // standard
-        let out = Command::new("cmd")
+        // let out = Command::new("cmd")
+        //     .args(["/C", "echo", "hello"])
+        //     .output()
+        //     .unwrap();
+        // println!("code {:?}", out.status.code());
+        // assert!(out.status.success());
+        // assert_eq!(out.stdout, b"hello\r\n");
+
+        // super
+        // let mut out = super_command::Command::new("cmd")
+        //     .args(["/C", "echo", "hello test"])
+        //     .spawn().expect("success");
+        // let code = out.wait().expect("success");
+        // println!("code {:?}",code);
+       
+        // super output
+        let out2 = super_command::Command::new("cmd")
             .args(["/C", "echo", "hello"])
             .output()
             .unwrap();
-        println!("code {:?}", out.status.code());
-        assert!(out.status.success());
-        assert_eq!(out.stdout, b"hello\r\n");
-
-        // super
-        let mut out = super_command::Command::new("cmd")
-            .args(["/C", "echo", "hello test"])
-            .spawn().expect("success");
-        let code = out.wait().expect("success");
-        println!("code {:?}",code);
-        //assert_eq!(out.stderr, b"hello\r\n");
+        println!("code {:?}", out2.status.code());
+        assert_eq!(out2.stdout, b"hello\r\n");
+        assert!(out2.status.success());
+        
     }
 }

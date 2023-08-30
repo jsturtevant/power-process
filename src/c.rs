@@ -29,13 +29,15 @@ pub use windows_sys::Win32::System::Pipes::{
 };
 pub use windows_sys::Win32::System::SystemInformation::GetSystemDirectoryW;
 pub use windows_sys::Win32::System::SystemInformation::GetWindowsDirectoryW;
+use windows_sys::Win32::System::Threading::{PROCESS_CREATION_FLAGS, STARTUPINFOW_FLAGS};
 pub use windows_sys::Win32::System::Threading::TerminateProcess;
 pub use windows_sys::Win32::System::Threading::{
-    CreateEventW, CreateProcessW, GetCurrentProcessId, GetExitCodeProcess, GetProcessId, SleepEx,
+    CreateEventW, GetCurrentProcessId, GetExitCodeProcess, GetProcessId, SleepEx,
     WaitForSingleObject, CREATE_NEW_PROCESS_GROUP, CREATE_UNICODE_ENVIRONMENT, DETACHED_PROCESS,
-    INFINITE, PROCESS_INFORMATION, STARTF_USESTDHANDLES, STARTUPINFOW,
+    INFINITE, STARTF_USESTDHANDLES,
 };
 pub use windows_sys::Win32::System::IO::CancelIo;
+use windows_sys::core::{PWSTR, PCWSTR};
 
 use core::ffi::NonZero_c_ulong;
 use std::ffi::c_longlong;
@@ -337,4 +339,62 @@ extern "system" {
 #[link(name = "kernel32")]
 extern "system" {
     pub fn GetCurrentProcess() -> HANDLE;
+}
+
+#[link(name = "kernel32")]
+extern "system" {
+    pub fn CreateProcessW(
+        lpapplicationname: PCWSTR,
+        lpcommandline: PWSTR,
+        lpprocessattributes: *const SECURITY_ATTRIBUTES,
+        lpthreadattributes: *const SECURITY_ATTRIBUTES,
+        binherithandles: BOOL,
+        dwcreationflags: PROCESS_CREATION_FLAGS,
+        lpenvironment: *const ::core::ffi::c_void,
+        lpcurrentdirectory: PCWSTR,
+        lpstartupinfo: *const STARTUPINFOW,
+        lpprocessinformation: *mut PROCESS_INFORMATION,
+    ) -> BOOL;
+}
+
+#[repr(C)]
+pub struct STARTUPINFOW {
+    pub cb: u32,
+    pub lpReserved: PWSTR,
+    pub lpDesktop: PWSTR,
+    pub lpTitle: PWSTR,
+    pub dwX: u32,
+    pub dwY: u32,
+    pub dwXSize: u32,
+    pub dwYSize: u32,
+    pub dwXCountChars: u32,
+    pub dwYCountChars: u32,
+    pub dwFillAttribute: u32,
+    pub dwFlags: STARTUPINFOW_FLAGS,
+    pub wShowWindow: u16,
+    pub cbReserved2: u16,
+    pub lpReserved2: *mut u8,
+    pub hStdInput: HANDLE,
+    pub hStdOutput: HANDLE,
+    pub hStdError: HANDLE,
+}
+impl ::core::marker::Copy for STARTUPINFOW {}
+impl ::core::clone::Clone for STARTUPINFOW {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+#[repr(C)]
+pub struct PROCESS_INFORMATION {
+    pub hProcess: HANDLE,
+    pub hThread: HANDLE,
+    pub dwProcessId: u32,
+    pub dwThreadId: u32,
+}
+impl ::core::marker::Copy for PROCESS_INFORMATION {}
+impl ::core::clone::Clone for PROCESS_INFORMATION {
+    fn clone(&self) -> Self {
+        *self
+    }
 }

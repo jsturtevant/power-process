@@ -52,7 +52,7 @@ pub struct Pipes {
 /// mode. This means that technically speaking it should only ever be used
 /// with `OVERLAPPED` instances, but also works out ok if it's only ever used
 /// once at a time (which we do indeed guarantee).
-pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool) -> io::Result<Pipes> {
+pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool, std_name: &str) -> io::Result<Pipes> {
     // A 64kb pipe capacity is the same as a typical Linux default.
     const PIPE_BUFFER_CAPACITY: u32 = 64 * 1024;
 
@@ -74,9 +74,10 @@ pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool) -> io::Res
         loop {
             tries += 1;
             name = format!(
-                r"\\.\pipe\__rust_anonymous_pipe1__.{}.{}",
+                r"\\.\pipe\__rust_anonymous_pipe1__.{}.{}.{}",
                 c::GetCurrentProcessId(),
-                random_number()
+                random_number(), 
+                std_name
             );
             let wide_name = OsStr::new(&name)
                 .encode_wide()
@@ -160,7 +161,7 @@ pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool) -> io::Res
         opts.security_attributes(&mut sa);
         let theirs = open(Path::new(&name), &opts)?;
         let theirs = AnonPipe {
-            inner: Handle(theirs.as_handle().try_clone_to_owned()?),
+            inner: Handle::from_raw_handle(theirs.as_raw_handle()),
         };
 
         Ok(Pipes {
@@ -181,12 +182,13 @@ pub fn spawn_pipe_relay(
     source: &AnonPipe,
     ours_readable: bool,
     their_handle_inheritable: bool,
+    stdio_id: &str
 ) -> io::Result<AnonPipe> {
     // We need this handle to live for the lifetime of the thread spawned below.
     let source = source.duplicate()?;
 
     // create a new pair of anon pipes.
-    let Pipes { theirs, ours } = anon_pipe(ours_readable, their_handle_inheritable)?;
+    let Pipes { theirs, ours } = anon_pipe(ours_readable, their_handle_inheritable, stdio_id)?;
 
     // Spawn a thread that passes messages from one pipe to the other.
     // Any errors will simply cause the thread to exit.

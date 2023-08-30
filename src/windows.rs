@@ -1,7 +1,7 @@
 use std::{
     ffi::OsStr,
     io::{self, ErrorKind},
-    mem::MaybeUninit,
+    mem::{MaybeUninit, self},
     os::windows::prelude::OsStrExt,
 };
 
@@ -32,7 +32,9 @@ where
     // This initial size also works around `GetFullPathNameW` returning
     // incorrect size hints for some short paths:
     // https://github.com/dylni/normpath/issues/5
-    let mut stack_buf: [MaybeUninit<u16>; 512] = MaybeUninit::uninit_array();
+    //
+    // note inlined #[unstable(feature = "maybe_uninit_uninit_array", issue = "96097")]
+    let mut stack_buf: [MaybeUninit<u16>; 512] = unsafe { MaybeUninit::<[MaybeUninit<u16>; 512]>::uninit().assume_init() };
     let mut heap_buf: Vec<MaybeUninit<u16>> = Vec::new();
     unsafe {
         let mut n = stack_buf.len();
@@ -78,11 +80,22 @@ where
                 unreachable!();
             } else {
                 // Safety: First `k` values are initialized.
-                let slice: &[u16] = MaybeUninit::slice_assume_init_ref(&buf[..k]);
+                let slice: &[u16] = slice_assume_init_ref(&buf[..k]);
                 return Ok(f2(slice));
             }
         }
     }
+}
+
+// inlined
+//#[unstable(feature = "maybe_uninit_slice", issue = "63569")]
+// #[rustc_const_unstable(feature = "maybe_uninit_slice", issue = "63569")]
+pub const unsafe fn slice_assume_init_ref(slice: &[MaybeUninit<u16>]) -> &[u16] {
+    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
+    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
+    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
+    // reference and thus guaranteed to be valid for reads.
+    unsafe { &*(slice as *const [_] as *const [u16]) }
 }
 
 pub(crate) fn ensure_no_nuls<T: AsRef<OsStr>>(str: T) -> io::Result<T> {
@@ -127,7 +140,7 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
             ($($n:literal,)+) => {
                 $(
                     if start[$n] == needle {
-                        return Some(((&start[$n] as *const u16).addr() - ptr.addr()) / 2);
+                        return Some((addr((&start[$n] as *const u16)) - addr(ptr)) / 2);
                     }
                 )+
             }
@@ -140,10 +153,18 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
 
     for c in start {
         if *c == needle {
-            return Some(((c as *const u16).addr() - ptr.addr()) / 2);
+            return Some((addr(c as *const u16) - addr(ptr)) / 2);
         }
     }
     None
+}
+
+// inlined for #![feature(strict_provenance)]
+pub fn addr<T: ?Sized>(t: *const T ) -> usize {
+    // FIXME(strict_provenance_magic): I am magic and should be a compiler intrinsic.
+    // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
+    // provenance).
+    unsafe { mem::transmute(t.cast::<()>()) }
 }
 
 pub fn hashmap_random_keys() -> (u64, u64) {

@@ -1,4 +1,5 @@
 use crate::{c, windows};
+use std::mem;
 use std::path::Path;
 use std::{
     ffi::{OsStr, OsString},
@@ -20,16 +21,16 @@ pub fn is_verbatim_sep(b: u8) -> bool {
 
 /// Returns true if `path` looks like a lone filename.
 pub(crate) fn is_file_name(path: &OsStr) -> bool {
-    !path.as_os_str_bytes().iter().copied().any(is_sep_byte)
+    !path.to_str().unwrap().as_bytes().iter().copied().any(is_sep_byte) 
 }
 pub(crate) fn has_trailing_slash(path: &OsStr) -> bool {
-    let is_verbatim = path.as_os_str_bytes().starts_with(br"\\?\");
+    let is_verbatim = path.to_str().unwrap().as_bytes().starts_with(br"\\?\");
     let is_separator = if is_verbatim {
         is_verbatim_sep
     } else {
         is_sep_byte
     };
-    if let Some(&c) = path.as_os_str_bytes().last() {
+    if let Some(&c) = path.to_str().unwrap().as_bytes().last() {
         is_separator(c)
     } else {
         false
@@ -84,7 +85,7 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
             ($($n:literal,)+) => {
                 $(
                     if start[$n] == needle {
-                        return Some(((&start[$n] as *const u16).addr() - ptr.addr()) / 2);
+                        return Some((addr((&start[$n] as *const u16)) - addr(ptr)) / 2);
                     }
                 )+
             }
@@ -97,10 +98,17 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
 
     for c in start {
         if *c == needle {
-            return Some(((c as *const u16).addr() - ptr.addr()) / 2);
+            return Some((addr(c as *const u16) - addr(ptr)) / 2);
         }
     }
     None
+}
+
+pub fn addr<T: ?Sized>(t: *const T ) -> usize {
+    // FIXME(strict_provenance_magic): I am magic and should be a compiler intrinsic.
+    // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
+    // provenance).
+    unsafe { mem::transmute(t.cast::<()>()) }
 }
 
 /// Get a normalized absolute path that can bypass path length limits.

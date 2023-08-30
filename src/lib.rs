@@ -1,11 +1,3 @@
-#![feature(os_str_bytes)]
-#![feature(maybe_uninit_slice)]
-#![feature(maybe_uninit_uninit_array)]
-#![feature(raw_os_nonzero)]
-#![feature(strict_provenance)]
-#![feature(read_buf)]
-#![feature(can_vector)]
-
 mod args;
 mod c;
 mod command;

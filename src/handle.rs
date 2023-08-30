@@ -1,7 +1,7 @@
 use crate::c;
 use cvt::cvt;
 use std::cmp;
-use std::io::{self, BorrowedCursor, ErrorKind, IoSlice, IoSliceMut, Read};
+use std::io::{self, ErrorKind, IoSlice, IoSliceMut, Read};
 use std::mem;
 use std::os::windows::io::{
     AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, IntoRawHandle, OwnedHandle, RawHandle,
@@ -152,29 +152,6 @@ impl Handle {
         match res {
             Ok(read) => Ok(read),
             Err(ref e) if e.raw_os_error() == Some(c::ERROR_HANDLE_EOF as i32) => Ok(0),
-            Err(e) => Err(e),
-        }
-    }
-
-    pub fn read_buf(&self, mut cursor: BorrowedCursor<'_>) -> io::Result<()> {
-        let res =
-            unsafe { self.synchronous_read(cursor.as_mut().as_mut_ptr(), cursor.capacity(), None) };
-
-        match res {
-            Ok(read) => {
-                // Safety: `read` bytes were written to the initialized portion of the buffer
-                unsafe {
-                    cursor.advance(read);
-                }
-                Ok(())
-            }
-
-            // The special treatment of BrokenPipe is to deal with Windows
-            // pipe semantics, which yields this error when *reading* from
-            // a pipe after the other end has closed; we interpret that as
-            // EOF on the pipe.
-            Err(ref e) if e.kind() == ErrorKind::BrokenPipe => Ok(()),
-
             Err(e) => Err(e),
         }
     }
@@ -405,16 +382,10 @@ impl<'a> Read for &'a Handle {
         (**self).read(buf)
     }
 
-    fn read_buf(&mut self, buf: BorrowedCursor<'_>) -> io::Result<()> {
-        (**self).read_buf(buf)
-    }
+   
 
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         (**self).read_vectored(bufs)
     }
 
-    #[inline]
-    fn is_read_vectored(&self) -> bool {
-        (**self).is_read_vectored()
-    }
 }

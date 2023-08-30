@@ -150,3 +150,45 @@ pub struct Output {
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
 }
+
+
+pub trait CommandExt {
+
+    fn creation_flags(&mut self, flags: u32) -> &mut Command;
+
+    fn force_quotes(&mut self, enabled: bool) -> &mut Command;
+
+    fn raw_arg<S: AsRef<OsStr>>(&mut self, text_to_append_as_is: S) -> &mut Command;
+
+    unsafe fn raw_attribute<T: Copy + Send + Sync + 'static>(
+        &mut self,
+        attribute: usize,
+        value: T,
+    ) -> &mut Command;
+}
+
+impl CommandExt for Command {
+    fn creation_flags(&mut self, flags: u32) -> &mut Command {
+        self.inner.creation_flags(flags);
+        self
+    }
+
+    fn force_quotes(&mut self, enabled: bool) -> &mut Command {
+        self.inner.force_quotes(enabled);
+        self
+    }
+
+    fn raw_arg<S: AsRef<OsStr>>(&mut self, raw_text: S) -> &mut Command {
+        self.inner.raw_arg(raw_text.as_ref());
+        self
+    }
+
+    unsafe fn raw_attribute<T: Copy + Send + Sync + 'static>(
+        &mut self,
+        attribute: usize,
+        value: T,
+    ) -> &mut Command {
+        self.inner.raw_attribute(attribute, value);
+        self
+    }
+}

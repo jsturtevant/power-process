@@ -34,7 +34,7 @@ pub use windows_sys::Win32::System::Threading::TerminateProcess;
 pub use windows_sys::Win32::System::Threading::{
     CreateEventW, GetCurrentProcessId, GetExitCodeProcess, GetProcessId, SleepEx,
     WaitForSingleObject, CREATE_NEW_PROCESS_GROUP, CREATE_UNICODE_ENVIRONMENT, DETACHED_PROCESS,
-    INFINITE, STARTF_USESTDHANDLES,
+    INFINITE, STARTF_USESTDHANDLES, EXTENDED_STARTUPINFO_PRESENT,
 };
 use windows_sys::Win32::System::Threading::{PROCESS_CREATION_FLAGS, STARTUPINFOW_FLAGS};
 pub use windows_sys::Win32::System::IO::CancelIo;
@@ -382,6 +382,19 @@ impl ::core::clone::Clone for STARTUPINFOW {
         *self
     }
 }
+pub type LPPROC_THREAD_ATTRIBUTE_LIST = *mut ::core::ffi::c_void;
+
+#[repr(C)]
+pub struct STARTUPINFOEXW {
+    pub StartupInfo: STARTUPINFOW,
+    pub lpAttributeList: LPPROC_THREAD_ATTRIBUTE_LIST,
+}
+impl ::core::marker::Copy for STARTUPINFOEXW {}
+impl ::core::clone::Clone for STARTUPINFOEXW {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 
 #[repr(C)]
 pub struct PROCESS_INFORMATION {
@@ -395,4 +408,36 @@ impl ::core::clone::Clone for PROCESS_INFORMATION {
     fn clone(&self) -> Self {
         *self
     }
+}
+
+#[link(name = "kernel32")]
+extern "system" {
+    pub fn InitializeProcThreadAttributeList(
+        lpattributelist: LPPROC_THREAD_ATTRIBUTE_LIST,
+        dwattributecount: u32,
+        dwflags: u32,
+        lpsize: *mut usize,
+    ) -> BOOL;
+}
+
+#[link(name = "kernel32")]
+extern "system" {
+    pub fn UpdateProcThreadAttribute(
+        lpattributelist: LPPROC_THREAD_ATTRIBUTE_LIST,
+        dwflags: u32,
+        attribute: usize,
+        lpvalue: *const ::core::ffi::c_void,
+        cbsize: usize,
+        lppreviousvalue: *mut ::core::ffi::c_void,
+        lpreturnsize: *const usize,
+    ) -> BOOL;
+}
+#[link(name = "kernel32")]
+extern "system" {
+    pub fn DeleteProcThreadAttributeList(lpattributelist: LPPROC_THREAD_ATTRIBUTE_LIST) -> ();
+}
+
+#[link(name = "kernel32")]
+extern "system" {
+    pub fn CloseHandle(hobject: HANDLE) -> BOOL;
 }

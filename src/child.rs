@@ -26,6 +26,12 @@ pub struct Child {
     pub(crate) main_thread_handle: Handle,
 }
 
+impl AsRawHandle for Child {
+    fn as_raw_handle(&self) -> c::HANDLE {
+        self.handle.as_raw_handle()
+    }
+}
+
 impl Child {
     pub fn kill(&mut self) -> io::Result<()> {
         let result = unsafe { c::TerminateProcess(self.handle.as_raw_handle() as isize, 1) };
@@ -117,4 +123,15 @@ pub fn wait_with_output(
 
     let status = process.wait()?;
     Ok((status, stdout, stderr))
+}
+
+pub trait ChildExt {
+    fn main_thread_handle(&self) -> BorrowedHandle<'_>;
+}
+
+
+impl ChildExt for Child {
+    fn main_thread_handle(&self) -> BorrowedHandle<'_> {
+        self.main_thread_handle.as_handle()
+    }
 }

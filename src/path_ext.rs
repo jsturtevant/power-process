@@ -1,4 +1,4 @@
-use crate::{c, windows};
+use crate::{c, util};
 use std::mem;
 use std::path::Path;
 use std::{
@@ -172,7 +172,7 @@ pub(crate) fn get_long_path(mut path: Vec<u16>, prefer_verbatim: bool) -> io::Re
     // Firstly, get the absolute path using `GetFullPathNameW`.
     // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfullpathnamew
     let lpfilename = path.as_ptr();
-    windows::fill_utf16_buf(
+    util::fill_utf16_buf(
         // SAFETY: `fill_utf16_buf` ensures the `buffer` and `size` are valid.
         // `lpfilename` is a pointer to a null terminated string that is not
         // invalidated until after `GetFullPathNameW` returns successfully.

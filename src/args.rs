@@ -5,7 +5,7 @@
 
 use crate::c;
 use crate::path_ext::get_long_path;
-use crate::windows::{ensure_no_nuls, to_u16s};
+use crate::util::{ensure_no_nuls, to_u16s};
 
 use std::ffi::OsString;
 use std::fmt;
@@ -177,7 +177,7 @@ pub(crate) fn to_user_path(path: &Path) -> io::Result<Vec<u16>> {
     from_wide_to_user_path(to_u16s(path)?)
 }
 pub(crate) fn from_wide_to_user_path(mut path: Vec<u16>) -> io::Result<Vec<u16>> {
-    use crate::windows::fill_utf16_buf;
+    use crate::util::fill_utf16_buf;
     use std::ptr;
 
     // UTF-16 encoded code points, used in parsing and building UTF-16 paths.

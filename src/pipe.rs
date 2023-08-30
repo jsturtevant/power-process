@@ -5,7 +5,7 @@ use std::os::windows::prelude::*;
 use crate::c;
 use crate::file::{open, OpenOptions};
 use crate::handle::{Handle, IntoInner};
-use crate::windows::hashmap_random_keys;
+use crate::util::hashmap_random_keys;
 use std::ffi::OsStr;
 use std::io::{self, Read};
 use std::mem;

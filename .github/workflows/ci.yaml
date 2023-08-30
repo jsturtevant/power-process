@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        os: ["windows-2019", "windows-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        env:
+          RUST_CACHE_KEY_OS: ${{ matrix.os }}
+        with:
+          rustflags: ''
+      - name: Build
+        run: cargo build
+      - name: Check
+        run: |
+          cargo fmt -- --check
+          cargo check
+      - name: Check
+        run: cargo test

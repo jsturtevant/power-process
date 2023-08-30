@@ -8,9 +8,6 @@ use std::{
     ptr,
 };
 
-pub const MAIN_SEP_STR: &str = "\\";
-pub const MAIN_SEP: char = '\\';
-
 #[inline]
 pub fn is_sep_byte(b: u8) -> bool {
     b == b'/' || b == b'\\'

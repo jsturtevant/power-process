@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::args::{self, Arg};
 use crate::env::{CommandEnv, EnvKey};
 use crate::file::{open, OpenOptions};
@@ -12,8 +13,7 @@ use std::env::consts::{EXE_EXTENSION, EXE_SUFFIX};
 use std::ffi::{c_void, OsStr, OsString};
 use std::fs::File;
 use std::os::windows::prelude::{
-    AsRawHandle, FromRawHandle, IntoRawHandle, OsStrExt, OsStringExt,
-    RawHandle,
+    AsRawHandle, FromRawHandle, IntoRawHandle, OsStrExt, OsStringExt, RawHandle,
 };
 use std::path::{Path, PathBuf};
 use std::process::ExitStatus;
@@ -176,7 +176,11 @@ impl Command {
 
         let _guard = CREATE_PROCESS_LOCK.lock();
 
-        let mut pipes = StdioPipes { stdin: None, stdout: None, stderr: None };
+        let mut pipes = StdioPipes {
+            stdin: None,
+            stdout: None,
+            stderr: None,
+        };
         let null = Stdio::Null;
         let default_stdin = if needs_stdin { &default } else { &null };
         let stdin = self.stdin.as_ref().unwrap_or(default_stdin);
@@ -250,7 +254,7 @@ impl From<AnonPipe> for Stdio {
 
 impl From<File> for Stdio {
     fn from(file: File) -> Stdio {
-        unsafe {Stdio::Handle(Handle::from_raw_handle(file.as_raw_handle()))}
+        unsafe { Stdio::Handle(Handle::from_raw_handle(file.as_raw_handle())) }
     }
 }
 
@@ -277,7 +281,8 @@ impl Stdio {
 
             Stdio::Pipe(ref source) => {
                 let ours_readable = stdio_id != c::STD_INPUT_HANDLE;
-                pipe::spawn_pipe_relay(source, ours_readable, true, std_name(stdio_id)).map(AnonPipe::into_handle)
+                pipe::spawn_pipe_relay(source, ours_readable, true, std_name(stdio_id))
+                    .map(AnonPipe::into_handle)
             }
 
             Stdio::Handle(ref handle) => handle.duplicate(0, true, c::DUPLICATE_SAME_ACCESS),
@@ -297,7 +302,7 @@ impl Stdio {
                 opts.write(stdio_id != c::STD_INPUT_HANDLE);
                 opts.security_attributes(&mut sa);
                 let file = open(Path::new("NUL"), &opts)?;
-                unsafe {Ok(Handle::from_raw_handle(file.as_raw_handle()))}
+                unsafe { Ok(Handle::from_raw_handle(file.as_raw_handle())) }
             }
         }
     }

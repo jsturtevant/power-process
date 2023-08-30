@@ -1,12 +1,13 @@
+#![allow(non_snake_case)]
 
 use std::os::windows::prelude::*;
 
+use crate::c;
 use crate::file::{open, OpenOptions};
 use crate::handle::{Handle, IntoInner};
 use crate::windows::hashmap_random_keys;
-use crate::c;
 use std::ffi::OsStr;
-use std::io::{self, BorrowedCursor, IoSlice, IoSliceMut, Read};
+use std::io::{self,Read};
 use std::mem;
 use std::path::Path;
 use std::ptr;
@@ -52,7 +53,11 @@ pub struct Pipes {
 /// mode. This means that technically speaking it should only ever be used
 /// with `OVERLAPPED` instances, but also works out ok if it's only ever used
 /// once at a time (which we do indeed guarantee).
-pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool, std_name: &str) -> io::Result<Pipes> {
+pub fn anon_pipe(
+    ours_readable: bool,
+    their_handle_inheritable: bool,
+    std_name: &str,
+) -> io::Result<Pipes> {
     // A 64kb pipe capacity is the same as a typical Linux default.
     const PIPE_BUFFER_CAPACITY: u32 = 64 * 1024;
 
@@ -76,7 +81,7 @@ pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool, std_name: 
             name = format!(
                 r"\\.\pipe\__rust_anonymous_pipe1__.{}.{}.{}",
                 c::GetCurrentProcessId(),
-                random_number(), 
+                random_number(),
                 std_name
             );
             let wide_name = OsStr::new(&name)
@@ -160,9 +165,7 @@ pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool, std_name: 
         };
         opts.security_attributes(&mut sa);
         let theirs = open(Path::new(&name), &opts)?;
-        let theirs = AnonPipe {
-            inner: theirs,
-        };
+        let theirs = AnonPipe { inner: theirs };
 
         Ok(Pipes {
             ours: AnonPipe { inner: ours },
@@ -182,7 +185,7 @@ pub fn spawn_pipe_relay(
     source: &AnonPipe,
     ours_readable: bool,
     their_handle_inheritable: bool,
-    stdio_id: &str
+    stdio_id: &str,
 ) -> io::Result<AnonPipe> {
     // We need this handle to live for the lifetime of the thread spawned below.
     let source = source.duplicate()?;
@@ -267,36 +270,7 @@ impl AnonPipe {
         }
     }
 
-    pub fn read_buf(&self, mut buf: BorrowedCursor<'_>) -> io::Result<()> {
-        let result = unsafe {
-            let len = std::cmp::min(buf.capacity(), c::DWORD::MAX as usize) as c::DWORD;
-            self.alertable_io_internal(c::ReadFileEx, buf.as_mut().as_mut_ptr() as _, len)
-        };
 
-        match result {
-            // The special treatment of BrokenPipe is to deal with Windows
-            // pipe semantics, which yields this error when *reading* from
-            // a pipe after the other end has closed; we interpret that as
-            // EOF on the pipe.
-            Err(ref e) if e.kind() == io::ErrorKind::BrokenPipe => Ok(()),
-            Err(e) => Err(e),
-            Ok(n) => {
-                unsafe {
-                    buf.advance(n);
-                }
-                Ok(())
-            }
-        }
-    }
-
-    pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
-        self.inner.read_vectored(bufs)
-    }
-
-    #[inline]
-    pub fn is_read_vectored(&self) -> bool {
-        self.inner.is_read_vectored()
-    }
 
     pub fn read_to_end(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
         self.handle().read_to_end(buf)
@@ -309,14 +283,6 @@ impl AnonPipe {
         }
     }
 
-    pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
-        self.inner.write_vectored(bufs)
-    }
-
-    #[inline]
-    pub fn is_write_vectored(&self) -> bool {
-        self.inner.is_write_vectored()
-    }
 
     /// Synchronizes asynchronous reads or writes using our anonymous pipe.
     ///

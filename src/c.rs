@@ -2,6 +2,7 @@
 #![cfg_attr(test, allow(dead_code))]
 
 use libc::c_void;
+use windows_sys::core::{PCWSTR, PWSTR};
 pub use windows_sys::Win32::Foundation::{
     RtlNtStatusToDosError, SetLastError, BOOL, DUPLICATE_HANDLE_OPTIONS, DUPLICATE_SAME_ACCESS,
     ERROR_ACCESS_DENIED, ERROR_BROKEN_PIPE, ERROR_HANDLE_EOF, ERROR_INSUFFICIENT_BUFFER,
@@ -29,17 +30,15 @@ pub use windows_sys::Win32::System::Pipes::{
 };
 pub use windows_sys::Win32::System::SystemInformation::GetSystemDirectoryW;
 pub use windows_sys::Win32::System::SystemInformation::GetWindowsDirectoryW;
-use windows_sys::Win32::System::Threading::{PROCESS_CREATION_FLAGS, STARTUPINFOW_FLAGS};
 pub use windows_sys::Win32::System::Threading::TerminateProcess;
 pub use windows_sys::Win32::System::Threading::{
     CreateEventW, GetCurrentProcessId, GetExitCodeProcess, GetProcessId, SleepEx,
     WaitForSingleObject, CREATE_NEW_PROCESS_GROUP, CREATE_UNICODE_ENVIRONMENT, DETACHED_PROCESS,
     INFINITE, STARTF_USESTDHANDLES,
 };
+use windows_sys::Win32::System::Threading::{PROCESS_CREATION_FLAGS, STARTUPINFOW_FLAGS};
 pub use windows_sys::Win32::System::IO::CancelIo;
-use windows_sys::core::{PWSTR, PCWSTR};
 
-use core::ffi::NonZero_c_ulong;
 use std::ffi::c_longlong;
 use std::ffi::c_ulong;
 
@@ -47,7 +46,6 @@ pub type LPSECURITY_ATTRIBUTES = *mut SECURITY_ATTRIBUTES;
 pub type NTSTATUS = i32;
 pub type DWORD = c_ulong;
 pub type ULONG = c_ulong;
-pub type NonZeroDWORD = NonZero_c_ulong;
 pub type LARGE_INTEGER = c_longlong;
 
 pub use std::io::Error;

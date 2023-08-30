@@ -1,11 +1,11 @@
 use std::{
     io,
-    os::windows::prelude::{RawHandle, FromRawHandle},
+    os::windows::prelude::{FromRawHandle, RawHandle},
     path::Path,
     ptr,
 };
 
-use crate::{c, path_ext, handle::Handle};
+use crate::{c, handle::Handle, path_ext};
 
 pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<Handle> {
     let path = path_ext::maybe_verbatim(path)?;
@@ -21,7 +21,7 @@ pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<Handle> {
         )
     };
     if handle != c::INVALID_HANDLE_VALUE {
-        unsafe {Ok(Handle::from_raw_handle(handle as RawHandle)) }
+        unsafe { Ok(Handle::from_raw_handle(handle as RawHandle)) }
     } else {
         Err(io::Error::last_os_error())
     }
@@ -69,36 +69,11 @@ impl OpenOptions {
     pub fn write(&mut self, write: bool) {
         self.write = write;
     }
-    pub fn append(&mut self, append: bool) {
-        self.append = append;
-    }
-    pub fn truncate(&mut self, truncate: bool) {
-        self.truncate = truncate;
-    }
-    pub fn create(&mut self, create: bool) {
-        self.create = create;
-    }
-    pub fn create_new(&mut self, create_new: bool) {
-        self.create_new = create_new;
-    }
 
-    pub fn custom_flags(&mut self, flags: u32) {
-        self.custom_flags = flags;
-    }
-    pub fn access_mode(&mut self, access_mode: u32) {
-        self.access_mode = Some(access_mode);
-    }
     pub fn share_mode(&mut self, share_mode: u32) {
         self.share_mode = share_mode;
     }
-    pub fn attributes(&mut self, attrs: u32) {
-        self.attributes = attrs;
-    }
-    pub fn security_qos_flags(&mut self, flags: u32) {
-        // We have to set `SECURITY_SQOS_PRESENT` here, because one of the valid flags we can
-        // receive is `SECURITY_ANONYMOUS = 0x0`, which we can't check for later on.
-        self.security_qos_flags = flags | c::SECURITY_SQOS_PRESENT;
-    }
+   
     pub fn security_attributes(&mut self, attrs: c::LPSECURITY_ATTRIBUTES) {
         self.security_attributes = attrs;
     }

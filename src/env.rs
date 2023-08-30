@@ -60,15 +60,12 @@ impl PartialEq<str> for EnvKey {
 }
 
 // Stores a set of changes to an environment
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct CommandEnv {
     clear: bool,
     saw_path: bool,
     vars: BTreeMap<EnvKey, Option<OsString>>,
 }
-
-
 
 impl fmt::Debug for CommandEnv {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -131,10 +128,6 @@ impl CommandEnv {
     pub fn clear(&mut self) {
         self.clear = true;
         self.vars.clear();
-    }
-
-    pub fn have_changed_path(&self) -> bool {
-        self.saw_path || self.clear
     }
 
     fn maybe_saw_path(&mut self, key: &EnvKey) {

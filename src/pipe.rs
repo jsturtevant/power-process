@@ -1,10 +1,10 @@
-use std::fs::File;
+
 use std::os::windows::prelude::*;
 
 use crate::file::{open, OpenOptions};
 use crate::handle::{Handle, IntoInner};
 use crate::windows::hashmap_random_keys;
-use crate::{c, path_ext};
+use crate::{c};
 use std::ffi::OsStr;
 use std::io::{self, BorrowedCursor, IoSlice, IoSliceMut, Read};
 use std::mem;

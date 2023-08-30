@@ -124,7 +124,7 @@ impl Handle {
         let res = unsafe { self.synchronous_read(buf.as_mut_ptr().cast(), buf.len(), None) };
 
         match res {
-            Ok(read) => Ok(read as usize),
+            Ok(read) => Ok(read),
 
             // The special treatment of BrokenPipe is to deal with Windows
             // pipe semantics, which yields this error when *reading* from
@@ -150,7 +150,7 @@ impl Handle {
             unsafe { self.synchronous_read(buf.as_mut_ptr().cast(), buf.len(), Some(offset)) };
 
         match res {
-            Ok(read) => Ok(read as usize),
+            Ok(read) => Ok(read),
             Err(ref e) if e.raw_os_error() == Some(c::ERROR_HANDLE_EOF as i32) => Ok(0),
             Err(e) => Err(e),
         }
@@ -164,7 +164,7 @@ impl Handle {
             Ok(read) => {
                 // Safety: `read` bytes were written to the initialized portion of the buffer
                 unsafe {
-                    cursor.advance(read as usize);
+                    cursor.advance(read);
                 }
                 Ok(())
             }
@@ -241,7 +241,7 @@ impl Handle {
     }
 
     pub fn write(&self, buf: &[u8]) -> io::Result<usize> {
-        self.synchronous_write(&buf, None)
+        self.synchronous_write(buf, None)
     }
 
     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
@@ -254,7 +254,7 @@ impl Handle {
     }
 
     pub fn write_at(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
-        self.synchronous_write(&buf, Some(offset))
+        self.synchronous_write(buf, Some(offset))
     }
 
     pub fn try_clone(&self) -> io::Result<Self> {

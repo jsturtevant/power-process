@@ -61,21 +61,14 @@ impl PartialEq<str> for EnvKey {
 
 // Stores a set of changes to an environment
 #[derive(Clone)]
+#[derive(Default)]
 pub struct CommandEnv {
     clear: bool,
     saw_path: bool,
     vars: BTreeMap<EnvKey, Option<OsString>>,
 }
 
-impl Default for CommandEnv {
-    fn default() -> Self {
-        CommandEnv {
-            clear: false,
-            saw_path: false,
-            vars: Default::default(),
-        }
-    }
-}
+
 
 impl fmt::Debug for CommandEnv {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -97,7 +90,7 @@ impl CommandEnv {
             }
         }
         for (k, maybe_v) in &self.vars {
-            if let &Some(ref v) = maybe_v {
+            if let Some(v) = maybe_v {
                 result.insert(k.clone(), v.clone());
             } else {
                 result.remove(k);

@@ -65,8 +65,8 @@ pub fn args() -> Args {
 /// This function was tested for equivalence to the C/C++ parsing rules using an
 /// extensive test suite available at
 /// <https://github.com/ChrisDenton/winarg/tree/std>.
-fn parse_lp_cmd_line<'a, F: Fn() -> OsString>(
-    lp_cmd_line: Option<WStrUnits<'a>>,
+fn parse_lp_cmd_line<F: Fn() -> OsString>(
+    lp_cmd_line: Option<WStrUnits<'_>>,
     exe_name: F,
 ) -> Vec<OsString> {
     const BACKSLASH: NonZeroU16 = non_zero_u16(b'\\' as u16);

@@ -60,7 +60,7 @@ impl Process {
                 &mut status,
             ))?;
 
-            Ok(ExitStatus::from_raw(status as u32))
+            Ok(ExitStatus::from_raw(status))
         }
     }
 
@@ -78,7 +78,7 @@ impl Process {
                 self.handle.as_raw_handle() as isize,
                 &mut status,
             ))?;
-            Ok(Some(ExitStatus::from_raw(status as u32)))
+            Ok(Some(ExitStatus::from_raw(status)))
         }
     }
 

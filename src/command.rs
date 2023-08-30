@@ -7,11 +7,12 @@ use crate::pipe::{self, AnonPipe};
 use crate::process::Process;
 use crate::{c, windows};
 use cvt::cvt;
+use windows_sys::Win32::Foundation::HANDLE as ISIZE_HANDLE;
 use std::collections::BTreeMap;
 use std::env::consts::{EXE_EXTENSION, EXE_SUFFIX};
 use std::ffi::{c_void, OsStr, OsString};
 use std::os::windows::prelude::{
-    AsHandle, AsRawHandle, FromRawHandle, HandleOrInvalid, IntoRawHandle, OsStrExt, OsStringExt,
+    AsRawHandle, FromRawHandle, HandleOrInvalid, IntoRawHandle, OsStrExt, OsStringExt,
     OwnedHandle, RawHandle,
 };
 use std::path::{Path, PathBuf};
@@ -115,7 +116,7 @@ impl Command {
     // }
 
     pub fn get_current_dir(&self) -> Option<&Path> {
-        self.cwd.as_ref().map(|cwd| Path::new(cwd))
+        self.cwd.as_ref().map(Path::new)
     }
 
     pub fn spawn(&mut self) -> io::Result<Process> {
@@ -232,7 +233,7 @@ impl Command {
     }
 
     pub fn output(&mut self) -> io::Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
-        let (proc, pipes) = self.spawn_internal(Stdio::MakePipe, false)?;
+        let (proc, pipes) = self.spawn_internal(Stdio::Null, false)?;
         crate::process::wait_with_output(proc, pipes)
     }
 }
@@ -369,16 +370,16 @@ fn zeroed_startupinfo() -> c::STARTUPINFOW {
         wShowWindow: 0,
         cbReserved2: 0,
         lpReserved2: ptr::null_mut(),
-        hStdInput: 0 as isize,
-        hStdOutput: 0 as isize,
-        hStdError: 0 as isize,
+        hStdInput: 0_isize,
+        hStdOutput: 0_isize,
+        hStdError: 0_isize,
     }
 }
 
 fn zeroed_process_information() -> c::PROCESS_INFORMATION {
     c::PROCESS_INFORMATION {
-        hProcess: 0 as isize,
-        hThread: 0 as isize,
+        hProcess: 0_isize,
+        hThread: 0_isize,
         dwProcessId: 0,
         dwThreadId: 0,
     }
@@ -445,8 +446,8 @@ fn make_dirp(d: Option<&OsString>) -> io::Result<(*const u16, Vec<u16>)> {
 // Therefore this functions first assumes `.exe` was intended.
 // It falls back to the plain file name if a full path is given and the extension is omitted
 // or if only a file name is given and it already contains an extension.
-fn resolve_exe<'a>(
-    exe_path: &'a OsStr,
+fn resolve_exe(
+    exe_path: &OsStr,
     parent_paths: impl FnOnce() -> Option<OsString>,
     child_paths: Option<&OsStr>,
 ) -> io::Result<Vec<u16>> {
@@ -494,7 +495,7 @@ fn resolve_exe<'a>(
 
         // Search the directories given by `search_paths`.
         let result = search_paths(parent_paths, child_paths, |mut path| {
-            path.push(&exe_path);
+            path.push(exe_path);
             if !has_extension {
                 path.set_extension(EXE_EXTENSION);
             }

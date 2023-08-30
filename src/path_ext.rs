@@ -79,7 +79,7 @@ pub fn to_u16s<S: AsRef<OsStr>>(s: S) -> std::io::Result<Vec<u16>> {
 
 pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
     let ptr = haystack.as_ptr();
-    let mut start = &haystack[..];
+    let mut start = haystack;
 
     // For performance reasons unfold the loop eight times.
     while start.len() >= 8 {

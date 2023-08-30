@@ -3,7 +3,6 @@ use std::{
     io::{self, ErrorKind},
     mem::MaybeUninit,
     os::windows::prelude::OsStrExt,
-    ptr,
 };
 
 use crate::c;
@@ -120,7 +119,7 @@ pub(crate) fn to_u16s<S: AsRef<OsStr>>(s: S) -> io::Result<Vec<u16>> {
 
 pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
     let ptr = haystack.as_ptr();
-    let mut start = &haystack[..];
+    let mut start = haystack;
 
     // For performance reasons unfold the loop eight times.
     while start.len() >= 8 {
@@ -151,7 +150,7 @@ pub fn hashmap_random_keys() -> (u64, u64) {
     let mut v = (0, 0);
     let ret = unsafe {
         c::BCryptGenRandom(
-            0 as isize,
+            0_isize,
             &mut v as *mut _ as *mut u8,
             std::mem::size_of_val(&v) as c::ULONG,
             c::BCRYPT_USE_SYSTEM_PREFERRED_RNG,

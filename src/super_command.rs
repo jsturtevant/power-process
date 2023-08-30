@@ -1,7 +1,7 @@
 use std::{ffi::OsStr, io, path::Path, process::ExitStatus};
 
 use crate::{
-    command::{Command as InnerCommand, Stdio},
+    command::{Command as InnerCommand},
     process::Process,
 };
 
@@ -114,7 +114,7 @@ impl Command {
     pub fn output(&mut self) -> io::Result<Output> {
         let (status, stdout, stderr) = self.inner.output()?;
         Ok(Output {
-            status: status,
+            status,
             stdout,
             stderr,
         })

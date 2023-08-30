@@ -9,7 +9,6 @@ mod pipe;
 mod child;
 pub mod power_command;
 mod windows;
-mod wstr;
 
 #[cfg(test)]
 mod tests {

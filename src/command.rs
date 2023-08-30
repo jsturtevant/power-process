@@ -5,7 +5,7 @@ use crate::file::{open, OpenOptions};
 use crate::handle::Handle;
 use crate::path_ext;
 use crate::pipe::{self, AnonPipe};
-use crate::process::Process;
+use crate::child::Child;
 use crate::{c, windows};
 use cvt::cvt;
 use std::collections::BTreeMap;
@@ -119,7 +119,7 @@ impl Command {
         self.cwd.as_ref().map(Path::new)
     }
 
-    pub fn spawn(&mut self) -> io::Result<Process> {
+    pub fn spawn(&mut self) -> io::Result<Child> {
         let (proc, _) = self.spawn_internal(Stdio::Inherit, true)?;
         Ok(proc)
     }
@@ -128,7 +128,7 @@ impl Command {
         &mut self,
         default: Stdio,
         needs_stdin: bool,
-    ) -> io::Result<(Process, StdioPipes)> {
+    ) -> io::Result<(Child, StdioPipes)> {
         let maybe_env = self.env.capture_if_changed();
 
         let child_paths = if let Some(env) = maybe_env.as_ref() {
@@ -222,7 +222,7 @@ impl Command {
 
         unsafe {
             Ok((
-                Process {
+                Child {
                     handle: Handle::from_raw_handle(pi.hProcess as RawHandle),
                     main_thread_handle: Handle::from_raw_handle(pi.hThread as RawHandle),
                 },
@@ -233,7 +233,7 @@ impl Command {
 
     pub fn output(&mut self) -> io::Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
         let (proc, pipes) = self.spawn_internal(Stdio::MakePipe, false)?;
-        crate::process::wait_with_output(proc, pipes)
+        crate::child::wait_with_output(proc, pipes)
     }
 }
 

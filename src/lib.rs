@@ -6,8 +6,8 @@ mod file;
 mod handle;
 mod path_ext;
 mod pipe;
-mod process;
-pub mod super_command;
+mod child;
+pub mod power_command;
 mod windows;
 mod wstr;
 
@@ -27,8 +27,8 @@ mod tests {
         assert!(out.status.success());
         assert_eq!(out.stdout, b"hello\r\n");
 
-        // super
-        let mut out = super_command::Command::new("cmd")
+        // super status
+        let mut out = power_command::Command::new("cmd")
             .args(["/C", "echo", "hello test"])
             .spawn()
             .expect("success");
@@ -36,7 +36,7 @@ mod tests {
         println!("code {:?}", code);
 
         // super output
-        let out2 = super_command::Command::new("cmd")
+        let out2 = power_command::Command::new("cmd")
             .args(["/C", "echo", "hello"])
             .output()
             .unwrap();

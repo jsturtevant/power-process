@@ -21,12 +21,12 @@ use std::{
 /// The lifetime of this value is linked to the lifetime of the actual
 /// process - the Process destructor calls self.finish() which waits
 /// for the process to terminate.
-pub struct Process {
+pub struct Child {
     pub(crate) handle: Handle,
     pub(crate) main_thread_handle: Handle,
 }
 
-impl Process {
+impl Child {
     pub fn kill(&mut self) -> io::Result<()> {
         let result = unsafe { c::TerminateProcess(self.handle.as_raw_handle() as isize, 1) };
         if result == c::FALSE {
@@ -93,7 +93,7 @@ impl Process {
 }
 
 pub fn wait_with_output(
-    mut process: Process,
+    mut process: Child,
     mut pipes: StdioPipes,
 ) -> io::Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
     drop(pipes.stdin.take());

@@ -1,8 +1,8 @@
-## Super-Process
+## Power-Process
 
-This a fork of the std library Command and Process for Windows (under same MIT/Apache2 licenses).
+This a fork of the std library Command and Process for Windows (under same MIT/Apache2 licenses) to enable a few key use cases.
 
-The reason for this is to have a more robust command experience and provide the customization of creating process that the std library is missing. This provides a way to get access to features now while they stabilize upstream but then swap in the std library.  The long term goal would be upstream many of the features here.
+The reason for this is to have a more robust command experience and provide the customization of creating a Windows process that the std library is missing. This provides a way to get access to features now while they stabilize upstream but adheres to the Command API so it can be swapped to the std library.  The long term goal would be upstream many of the features here.
 
 Some challenges this solves:
 
@@ -11,4 +11,3 @@ Some challenges this solves:
 - Don't inherit STDIO
 - Create suspended processes and resume threads
 
-## 

@@ -2,7 +2,7 @@ use std::{ffi::OsStr, io, path::Path, process::ExitStatus};
 
 use crate::{
     command::{Command as InnerCommand, Stdio},
-    process::Process,
+    child::Child,
 };
 
 pub struct Command {
@@ -83,7 +83,7 @@ impl Command {
     //     self
     // }
 
-    pub fn spawn(&mut self) -> io::Result<Process> {
+    pub fn spawn(&mut self) -> io::Result<Child> {
         let (proc, _) = self.inner.spawn_internal(Stdio::Inherit, false)?;
         Ok(proc)
     }

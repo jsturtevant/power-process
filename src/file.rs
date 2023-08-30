@@ -1,14 +1,13 @@
 use std::{
-    fs::File,
     io,
     os::windows::prelude::{RawHandle, FromRawHandle},
     path::Path,
     ptr,
 };
 
-use crate::{c, path_ext};
+use crate::{c, path_ext, handle::Handle};
 
-pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<File> {
+pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<Handle> {
     let path = path_ext::maybe_verbatim(path)?;
     let handle = unsafe {
         c::CreateFileW(
@@ -22,7 +21,7 @@ pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<File> {
         )
     };
     if handle != c::INVALID_HANDLE_VALUE {
-        unsafe {Ok(File::from_raw_handle(handle as RawHandle)) }
+        unsafe {Ok(Handle::from_raw_handle(handle as RawHandle)) }
     } else {
         Err(io::Error::last_os_error())
     }

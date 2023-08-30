@@ -223,7 +223,6 @@ impl Command {
                     main_thread_handle: Handle::from_raw_handle(pi.hThread as RawHandle),
                 },
                 pipes,
-
             ))
         }
     }

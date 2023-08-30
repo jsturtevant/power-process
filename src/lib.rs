@@ -23,25 +23,27 @@ mod wstr;
 mod tests {
     
 
+    use std::process::Command;
+
     use super::*;
 
     #[test]
     fn it_works() {
         // standard
-        // let out = Command::new("cmd")
-        //     .args(["/C", "echo", "hello"])
-        //     .output()
-        //     .unwrap();
-        // println!("code {:?}", out.status.code());
-        // assert!(out.status.success());
-        // assert_eq!(out.stdout, b"hello\r\n");
+        let out = Command::new("cmd")
+            .args(["/C", "echo", "hello"])
+            .output()
+            .unwrap();
+        println!("code {:?}", out.status.code());
+        assert!(out.status.success());
+        assert_eq!(out.stdout, b"hello\r\n");
 
         // super
-        // let mut out = super_command::Command::new("cmd")
-        //     .args(["/C", "echo", "hello test"])
-        //     .spawn().expect("success");
-        // let code = out.wait().expect("success");
-        // println!("code {:?}",code);
+        let mut out = super_command::Command::new("cmd")
+            .args(["/C", "echo", "hello test"])
+            .spawn().expect("success");
+        let code = out.wait().expect("success");
+        println!("code {:?}",code);
        
         // super output
         let out2 = super_command::Command::new("cmd")

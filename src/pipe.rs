@@ -4,7 +4,7 @@ use std::os::windows::prelude::*;
 use crate::file::{open, OpenOptions};
 use crate::handle::{Handle, IntoInner};
 use crate::windows::hashmap_random_keys;
-use crate::{c};
+use crate::c;
 use std::ffi::OsStr;
 use std::io::{self, BorrowedCursor, IoSlice, IoSliceMut, Read};
 use std::mem;
@@ -161,7 +161,7 @@ pub fn anon_pipe(ours_readable: bool, their_handle_inheritable: bool, std_name: 
         opts.security_attributes(&mut sa);
         let theirs = open(Path::new(&name), &opts)?;
         let theirs = AnonPipe {
-            inner: Handle::from_raw_handle(theirs.as_raw_handle()),
+            inner: theirs,
         };
 
         Ok(Pipes {

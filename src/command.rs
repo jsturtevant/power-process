@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::args::{self, Arg};
-use crate::child::Child;
+use crate::process::Process;
 use crate::env::{CommandEnv, EnvKey};
 use crate::file::{open, OpenOptions};
 use crate::handle::Handle;
@@ -134,16 +134,16 @@ impl Command {
         self.cwd.as_ref().map(Path::new)
     }
 
-    pub fn spawn(&mut self) -> io::Result<Child> {
+    pub(crate) fn spawn(&mut self) -> io::Result<Process> {
         let (proc, _) = self.spawn_internal(Stdio::Inherit, true)?;
         Ok(proc)
     }
 
-    pub fn spawn_internal(
+    pub(crate) fn spawn_internal(
         &mut self,
         default: Stdio,
         needs_stdin: bool,
-    ) -> io::Result<(Child, StdioPipes)> {
+    ) -> io::Result<(Process, StdioPipes)> {
         let maybe_env = self.env.capture_if_changed();
 
         let child_paths = if let Some(env) = maybe_env.as_ref() {
@@ -257,8 +257,8 @@ impl Command {
 
         unsafe {
             Ok((
-                Child {
-                    handle: Handle::from_raw_handle(pi.hProcess as RawHandle),
+                Process {
+                    process: Handle::from_raw_handle(pi.hProcess as RawHandle),
                     main_thread_handle: Handle::from_raw_handle(pi.hThread as RawHandle),
                 },
                 pipes,
@@ -268,7 +268,7 @@ impl Command {
 
     pub fn output(&mut self) -> io::Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
         let (proc, pipes) = self.spawn_internal(Stdio::MakePipe, false)?;
-        crate::child::wait_with_output(proc, pipes)
+        crate::process::wait_with_output(proc, pipes)
     }
 }
 

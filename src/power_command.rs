@@ -1,8 +1,8 @@
-use std::{ffi::OsStr, io, path::Path, process::ExitStatus};
+use std::{ffi::OsStr, io::{self, Write, Read}, path::Path, process::ExitStatus, os::windows::prelude::AsRawHandle};
 
 use crate::{
-    child::Child,
-    command::{Command as InnerCommand, Stdio},
+    command::{Command as InnerCommand, Stdio}, c, pipe::read2,
+    pipe::AnonPipe,
 };
 
 pub struct Command {
@@ -85,7 +85,7 @@ impl Command {
 
     pub fn spawn(&mut self) -> io::Result<Child> {
         let (proc, _) = self.inner.spawn_internal(Stdio::Inherit, false)?;
-        Ok(proc)
+        Ok(Child{handle: proc, stdin: None, stdout: None, stderr: None})
     }
 
     /// Executes the command as a child process, waiting for it to finish and
@@ -190,5 +190,146 @@ impl CommandExt for Command {
     ) -> &mut Command {
         self.inner.raw_attribute(attribute, value);
         self
+    }
+}
+
+pub struct ChildStdin {
+    inner: AnonPipe,
+}
+
+pub struct ChildStdout {
+    inner: AnonPipe,
+}
+
+pub struct ChildStderr {
+    inner: AnonPipe,
+}
+
+pub struct Child {
+    pub(crate) handle: crate::process::Process,
+    pub stdin: Option<ChildStdin>,
+    pub stdout: Option<ChildStdout>,
+    pub stderr: Option<ChildStderr>,
+}
+
+impl AsRawHandle for Child {
+    fn as_raw_handle(&self) -> c::HANDLE {
+        self.handle.handle().as_raw_handle()
+    }
+}
+
+impl Child {
+    pub fn kill(&mut self) -> io::Result<()> {
+        self.handle.kill()
+    }
+
+    pub fn id(&self) -> u32 {
+        self.handle.id()
+    }
+
+    pub fn wait(&mut self) -> io::Result<ExitStatus> {
+        drop(self.stdin.take());
+        self.handle.wait()
+    }
+
+    pub fn try_wait(&mut self) -> io::Result<Option<ExitStatus>> {
+        self.handle.try_wait()
+    }
+
+    /// Simultaneously waits for the child to exit and collect all remaining
+    /// output on the stdout/stderr handles, returning an `Output`
+    /// instance.
+    ///
+    /// The stdin handle to the child process, if any, will be closed
+    /// before waiting. This helps avoid deadlock: it ensures that the
+    /// child does not block waiting for input from the parent, while
+    /// the parent waits for the child to exit.
+    ///
+    /// By default, stdin, stdout and stderr are inherited from the parent.
+    /// In order to capture the output into this `Result<Output>` it is
+    /// necessary to create new pipes between parent and child. Use
+    /// `stdout(Stdio::piped())` or `stderr(Stdio::piped())`, respectively.
+    ///
+    /// # Examples
+    ///
+    /// ```should_panic
+    /// use std::process::{Command, Stdio};
+    ///
+    /// let child = Command::new("/bin/cat")
+    ///     .arg("file.txt")
+    ///     .stdout(Stdio::piped())
+    ///     .spawn()
+    ///     .expect("failed to execute child");
+    ///
+    /// let output = child
+    ///     .wait_with_output()
+    ///     .expect("failed to wait on child");
+    ///
+    /// assert!(output.status.success());
+    /// ```
+    ///
+    pub fn wait_with_output(mut self) -> io::Result<Output> {
+        drop(self.stdin.take());
+
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        match (self.stdout.take(), self.stderr.take()) {
+            (None, None) => {}
+            (Some(mut out), None) => {
+                let res = out.read_to_end(&mut stdout);
+                res.unwrap();
+            }
+            (None, Some(mut err)) => {
+                let res = err.read_to_end(&mut stderr);
+                res.unwrap();
+            }
+            (Some(out), Some(err)) => {
+                let res = read2(out.inner, &mut stdout, err.inner, &mut stderr);
+                res.unwrap();
+            }
+        }
+
+        let status = self.wait()?;
+        Ok(Output { status, stdout, stderr })
+    }
+}
+
+impl Read for ChildStdout {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
+    }
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.inner.read_to_end(buf)
+    }
+}
+
+impl Read for ChildStderr {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
+    }
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.inner.read_to_end(buf)
+    }
+}
+
+impl Write for ChildStdin {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        (&*self).write(buf)
+    }
+
+
+    #[inline]
+    fn flush(&mut self) -> io::Result<()> {
+        (&*self).flush()
+    }
+}
+
+impl Write for &ChildStdin {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.inner.write(buf)
+    }
+
+    #[inline]
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
     }
 }

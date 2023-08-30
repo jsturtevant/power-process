@@ -1,6 +1,6 @@
 mod args;
 mod c;
-mod child;
+mod process;
 mod command;
 mod env;
 mod file;
@@ -72,7 +72,7 @@ mod tests {
 
         let child = cmd.spawn().unwrap();
 
-        let child_handle = child.handle().as_raw_handle() as isize;
+        let child_handle = child.as_raw_handle() as isize;
         let mut  result = 0 as BOOL;
         let result_ptr: *mut BOOL = &mut result;
         unsafe { IsProcessInJob(HANDLE(child_handle), job_handle, result_ptr as *mut _) }.unwrap();
@@ -114,7 +114,7 @@ mod tests {
         //const PROC_THREAD_ATTRIBUTE_PARENT_PROCESS: usize = 0x00020000;
         const TH32CS_SNAPPROCESS: u32 = 0x00000002;
 
-        struct ProcessDropGuard(crate::child::Child);
+        struct ProcessDropGuard(crate::power_command::Child);
 
         impl Drop for ProcessDropGuard {
             fn drop(&mut self) {

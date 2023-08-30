@@ -21,10 +21,7 @@ mod wstr;
 
 #[cfg(test)]
 mod tests {
-    
-
     use std::process::Command;
-
     use super::*;
 
     #[test]

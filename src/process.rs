@@ -1,9 +1,15 @@
-use std::{os::windows::{prelude::{BorrowedHandle, OwnedHandle, AsRawHandle, AsHandle}, process::ExitStatusExt}, io,  process::ExitStatus};
-use std::io::Error;
-use cvt::cvt;
-use crate::{c, command::StdioPipes};
 use crate::pipe::read2;
-
+use crate::{c, command::StdioPipes};
+use cvt::cvt;
+use std::io::Error;
+use std::{
+    io,
+    os::windows::{
+        prelude::{AsHandle, AsRawHandle, BorrowedHandle, OwnedHandle},
+        process::ExitStatusExt,
+    },
+    process::ExitStatus,
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Processes
@@ -49,9 +55,11 @@ impl Process {
                 return Err(Error::last_os_error());
             }
             let mut status = 0;
-            cvt(c::GetExitCodeProcess(self.handle.as_raw_handle() as isize, &mut status))?;
+            cvt(c::GetExitCodeProcess(
+                self.handle.as_raw_handle() as isize,
+                &mut status,
+            ))?;
 
-           
             Ok(ExitStatus::from_raw(status as u32))
         }
     }
@@ -66,7 +74,10 @@ impl Process {
                 _ => return Err(io::Error::last_os_error()),
             }
             let mut status = 0;
-            cvt(c::GetExitCodeProcess(self.handle.as_raw_handle() as isize, &mut status))?;
+            cvt(c::GetExitCodeProcess(
+                self.handle.as_raw_handle() as isize,
+                &mut status,
+            ))?;
             Ok(Some(ExitStatus::from_raw(status as u32)))
         }
     }

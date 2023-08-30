@@ -6,18 +6,18 @@
 #![feature(read_buf)]
 #![feature(can_vector)]
 
-pub mod super_command;
-mod command;
 mod args;
-mod process;
-mod env;
 mod c;
+mod command;
+mod env;
+mod file;
+mod handle;
 mod path_ext;
+mod pipe;
+mod process;
+pub mod super_command;
 mod windows;
 mod wstr;
-mod pipe;
-mod handle;
-mod file;
 
 #[cfg(test)]
 mod tests {
@@ -29,16 +29,18 @@ mod tests {
     fn it_works() {
         // standard
         let out = Command::new("cmd")
-        .args(["/C", "echo hello"])
-        .output().unwrap();
+            .args(["/C", "echo hello"])
+            .output()
+            .unwrap();
         println!("code {:?}", out.status.code());
         assert!(out.status.success());
         assert_eq!(out.stdout, b"hello\r\n");
 
         // super
         let out = super_command::Command::new("cmd")
-                .args(["/C", "echo hello"])
-                .output().unwrap();
+            .args(["/C", "echo hello"])
+            .output()
+            .unwrap();
         println!("code {:?}", out.status.code());
         assert!(out.status.success());
         assert_eq!(out.stderr, b"hello\r\n");

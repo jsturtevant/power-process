@@ -1,7 +1,12 @@
-use std::{path::Path, io, fs::File, os::windows::prelude::{HandleOrInvalid, RawHandle, OwnedHandle}, ptr};
+use std::{
+    fs::File,
+    io,
+    os::windows::prelude::{HandleOrInvalid, OwnedHandle, RawHandle},
+    path::Path,
+    ptr,
+};
 
-use crate::{path_ext, c};
-
+use crate::{c, path_ext};
 
 pub fn open(path: &Path, opts: &OpenOptions) -> io::Result<File> {
     let path = path_ext::maybe_verbatim(path)?;
@@ -112,7 +117,9 @@ impl OpenOptions {
             (true, _, true, None) => {
                 Ok(c::GENERIC_READ | (c::FILE_GENERIC_WRITE & !c::FILE_WRITE_DATA))
             }
-            (false, false, false, None) => Err(io::Error::from_raw_os_error(ERROR_INVALID_PARAMETER)),
+            (false, false, false, None) => {
+                Err(io::Error::from_raw_os_error(ERROR_INVALID_PARAMETER))
+            }
         }
     }
 
@@ -146,6 +153,10 @@ impl OpenOptions {
         self.custom_flags
             | self.attributes
             | self.security_qos_flags
-            | if self.create_new { c::FILE_FLAG_OPEN_REPARSE_POINT } else { 0 }
+            | if self.create_new {
+                c::FILE_FLAG_OPEN_REPARSE_POINT
+            } else {
+                0
+            }
     }
 }

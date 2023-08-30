@@ -1,4 +1,5 @@
-
+use crate::c;
+use cvt::cvt;
 use std::cmp;
 use std::io::{self, BorrowedCursor, ErrorKind, IoSlice, IoSliceMut, Read};
 use std::mem;
@@ -6,10 +7,6 @@ use std::os::windows::io::{
     AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, IntoRawHandle, OwnedHandle, RawHandle,
 };
 use std::ptr;
-use crate::c;
-use cvt::cvt;
-
-
 
 /// An owned container for `HANDLE` object, closing them on Drop.
 ///
@@ -19,8 +16,12 @@ pub struct Handle(pub OwnedHandle);
 impl Handle {
     pub fn new_event(manual: bool, init: bool) -> io::Result<Handle> {
         unsafe {
-            let event =
-                c::CreateEventW(ptr::null_mut(), manual as c::BOOL, init as c::BOOL, ptr::null());
+            let event = c::CreateEventW(
+                ptr::null_mut(),
+                manual as c::BOOL,
+                init as c::BOOL,
+                ptr::null(),
+            );
             if event == 0 {
                 Err(io::Error::last_os_error())
             } else {
@@ -100,7 +101,10 @@ pub(crate) fn default_write_vectored<F>(write: F, bufs: &[IoSlice<'_>]) -> io::R
 where
     F: FnOnce(&[u8]) -> io::Result<usize>,
 {
-    let buf = bufs.iter().find(|b| !b.is_empty()).map_or(&[][..], |b| &**b);
+    let buf = bufs
+        .iter()
+        .find(|b| !b.is_empty())
+        .map_or(&[][..], |b| &**b);
     write(buf)
 }
 
@@ -108,7 +112,10 @@ pub(crate) fn default_read_vectored<F>(read: F, bufs: &mut [IoSliceMut<'_>]) -> 
 where
     F: FnOnce(&mut [u8]) -> io::Result<usize>,
 {
-    let buf = bufs.iter_mut().find(|b| !b.is_empty()).map_or(&mut [][..], |b| &mut **b);
+    let buf = bufs
+        .iter_mut()
+        .find(|b| !b.is_empty())
+        .map_or(&mut [][..], |b| &mut **b);
     read(buf)
 }
 
@@ -208,8 +215,12 @@ impl Handle {
         unsafe {
             let mut bytes = 0;
             let wait = if wait { c::TRUE } else { c::FALSE };
-            let res =
-                cvt(c::GetOverlappedResult(self.as_raw_handle(), overlapped, &mut bytes, wait));
+            let res = cvt(c::GetOverlappedResult(
+                self.as_raw_handle(),
+                overlapped,
+                &mut bytes,
+                wait,
+            ));
             match res {
                 Ok(_) => Ok(bytes as usize),
                 Err(e) => {
@@ -259,8 +270,6 @@ impl Handle {
         let new_handle = duplicate_handle(self.as_raw_handle(), access, inherit, options)?;
         Ok(Self(new_handle))
     }
-
-    
 
     /// Performs a synchronous read.
     ///
@@ -367,7 +376,6 @@ fn duplicate_handle(
     inherit: bool,
     options: u32,
 ) -> io::Result<OwnedHandle> {
-
     // `Stdin`, `Stdout`, and `Stderr` can all hold null handles, such as
     // in a process with a detached console. `DuplicateHandle` would fail
     // if we passed it a null handle, but we can treat null as a valid

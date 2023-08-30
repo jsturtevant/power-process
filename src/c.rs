@@ -1,39 +1,45 @@
 #![allow(nonstandard_style)]
 #![cfg_attr(test, allow(dead_code))]
 
-
 use libc::c_void;
-pub use windows_sys::Win32::System::Threading::TerminateProcess;
+pub use windows_sys::Win32::Foundation::{
+    RtlNtStatusToDosError, SetLastError, BOOL, DUPLICATE_HANDLE_OPTIONS, DUPLICATE_SAME_ACCESS,
+    ERROR_ACCESS_DENIED, ERROR_BROKEN_PIPE, ERROR_HANDLE_EOF, ERROR_INSUFFICIENT_BUFFER,
+    ERROR_INVALID_HANDLE, ERROR_INVALID_PARAMETER, ERROR_IO_PENDING, ERROR_SUCCESS, FALSE,
+    GENERIC_READ, GENERIC_WRITE, INVALID_HANDLE_VALUE, STATUS_END_OF_FILE, STATUS_PENDING, TRUE,
+    WAIT_OBJECT_0, WAIT_TIMEOUT, WIN32_ERROR,
+};
+pub use windows_sys::Win32::Security::Cryptography::{
+    BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG,
+};
+pub use windows_sys::Win32::Security::SECURITY_ATTRIBUTES;
+pub use windows_sys::Win32::Storage::FileSystem::{
+    CreateFileW, GetFileAttributesW, GetFullPathNameW, CREATE_ALWAYS, CREATE_NEW,
+    FILE_FLAG_FIRST_PIPE_INSTANCE, FILE_FLAG_OPEN_REPARSE_POINT, FILE_FLAG_OVERLAPPED,
+    FILE_GENERIC_WRITE, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_WRITE_DATA,
+    INVALID_FILE_ATTRIBUTES, OPEN_ALWAYS, OPEN_EXISTING, PIPE_ACCESS_INBOUND, PIPE_ACCESS_OUTBOUND,
+    SECURITY_SQOS_PRESENT, TRUNCATE_EXISTING,
+};
+pub use windows_sys::Win32::System::Console::{
+    GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+};
 pub use windows_sys::Win32::System::Environment::GetCommandLineW;
+pub use windows_sys::Win32::System::Pipes::{
+    CreateNamedPipeW, PIPE_READMODE_BYTE, PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
+};
 pub use windows_sys::Win32::System::SystemInformation::GetSystemDirectoryW;
 pub use windows_sys::Win32::System::SystemInformation::GetWindowsDirectoryW;
-pub use windows_sys::Win32::Foundation::{TRUE, FALSE, SetLastError, BOOL,
-    ERROR_INSUFFICIENT_BUFFER, STATUS_END_OF_FILE, DUPLICATE_SAME_ACCESS,RtlNtStatusToDosError, ERROR_ACCESS_DENIED, ERROR_IO_PENDING, ERROR_BROKEN_PIPE,
-    WAIT_OBJECT_0, WAIT_TIMEOUT,STATUS_PENDING,  ERROR_SUCCESS, INVALID_HANDLE_VALUE,ERROR_HANDLE_EOF, ERROR_INVALID_PARAMETER, WIN32_ERROR, DUPLICATE_HANDLE_OPTIONS,
-    GENERIC_WRITE,GENERIC_READ, ERROR_INVALID_HANDLE
+pub use windows_sys::Win32::System::Threading::TerminateProcess;
+pub use windows_sys::Win32::System::Threading::{
+    CreateEventW, CreateProcessW, GetCurrentProcessId, GetExitCodeProcess, GetProcessId, SleepEx,
+    WaitForSingleObject, CREATE_NEW_PROCESS_GROUP, CREATE_UNICODE_ENVIRONMENT, DETACHED_PROCESS,
+    INFINITE, PROCESS_INFORMATION, STARTF_USESTDHANDLES, STARTUPINFOW,
 };
-pub use windows_sys::Win32::Storage::FileSystem::{INVALID_FILE_ATTRIBUTES, 
-    PIPE_ACCESS_INBOUND, PIPE_ACCESS_OUTBOUND,FILE_FLAG_FIRST_PIPE_INSTANCE,
-    FILE_FLAG_OVERLAPPED,FILE_SHARE_READ,FILE_SHARE_WRITE, FILE_SHARE_DELETE,
-    SECURITY_SQOS_PRESENT,FILE_GENERIC_WRITE,FILE_WRITE_DATA, OPEN_EXISTING,
-    OPEN_ALWAYS,TRUNCATE_EXISTING,CREATE_ALWAYS, CREATE_NEW,FILE_FLAG_OPEN_REPARSE_POINT,
-    GetFileAttributesW, GetFullPathNameW, CreateFileW};
-pub use windows_sys::Win32::Security::SECURITY_ATTRIBUTES;
-pub use windows_sys::Win32::System::Pipes::{CreateNamedPipeW, 
-    PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_READMODE_BYTE,PIPE_WAIT };
-pub use windows_sys::Win32::System::Threading::
-{ CREATE_UNICODE_ENVIRONMENT, DETACHED_PROCESS, 
-    CREATE_NEW_PROCESS_GROUP, PROCESS_INFORMATION,
-    STARTUPINFOW, STARTF_USESTDHANDLES, INFINITE,
-    CreateProcessW,GetCurrentProcessId, CreateEventW,
-     GetProcessId, WaitForSingleObject,  GetExitCodeProcess, SleepEx};
 pub use windows_sys::Win32::System::IO::CancelIo;
-pub use windows_sys::Win32::System::Console::{STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE, GetStdHandle};
-pub use windows_sys::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
 
-use std::ffi::c_ulong;
-use std::ffi::c_longlong;
 use core::ffi::NonZero_c_ulong;
+use std::ffi::c_longlong;
+use std::ffi::c_ulong;
 
 pub type LPSECURITY_ATTRIBUTES = *mut SECURITY_ATTRIBUTES;
 pub type NTSTATUS = i32;
@@ -107,8 +113,12 @@ impl ::core::clone::Clone for IO_STATUS_BLOCK_0 {
 }
 
 impl IO_STATUS_BLOCK {
-    pub const PENDING: Self =
-        IO_STATUS_BLOCK { Anonymous: IO_STATUS_BLOCK_0 { Status: STATUS_PENDING }, Information: 0 };
+    pub const PENDING: Self = IO_STATUS_BLOCK {
+        Anonymous: IO_STATUS_BLOCK_0 {
+            Status: STATUS_PENDING,
+        },
+        Information: 0,
+    };
     pub fn status(&self) -> NTSTATUS {
         // SAFETY: If `self.Anonymous.Status` was set then this is obviously safe.
         // If `self.Anonymous.Pointer` was set then this is the equivalent to converting
@@ -258,7 +268,6 @@ mod sys {
     }
 }
 
-
 pub use windows_sys::Win32::Foundation::GetLastError;
 pub type LPVOID = *mut c_void;
 pub type LPOVERLAPPED = *mut OVERLAPPED;
@@ -280,7 +289,7 @@ pub type BOOLEAN = u8;
 extern "system" {
     #[link_name = "SystemFunction036"]
     pub fn RtlGenRandom(randombuffer: *mut ::core::ffi::c_void, randombufferlength: u32)
-    -> BOOLEAN;
+        -> BOOLEAN;
 }
 
 pub type PIO_APC_ROUTINE = ::core::option::Option<

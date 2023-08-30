@@ -1,17 +1,20 @@
-use std::{ffi::OsStr, path::Path, io, process::ExitStatus};
+use std::{ffi::OsStr, io, path::Path, process::ExitStatus};
 
-use crate::{command::{Command as InnerCommand, Stdio}, process::{Process}};
+use crate::{
+    command::{Command as InnerCommand, Stdio},
+    process::Process,
+};
 
 pub struct Command {
     inner: InnerCommand,
 }
 
-
 impl Command {
     pub fn new<S: AsRef<OsStr>>(program: S) -> Command {
-        Command { inner: InnerCommand::new(program.as_ref()) }
+        Command {
+            inner: InnerCommand::new(program.as_ref()),
+        }
     }
-
 
     pub fn arg<S: AsRef<OsStr>>(&mut self, arg: S) -> &mut Command {
         self.inner.arg(arg.as_ref());
@@ -110,7 +113,11 @@ impl Command {
     /// ```
     pub fn output(&mut self) -> io::Result<Output> {
         let (status, stdout, stderr) = self.inner.output()?;
-        Ok(Output { status: status, stdout, stderr })
+        Ok(Output {
+            status: status,
+            stdout,
+            stderr,
+        })
     }
 
     /// Executes a command as a child process, waiting for it to finish and
@@ -133,9 +140,7 @@ impl Command {
     /// assert!(status.success());
     /// ```
     pub fn status(&mut self) -> io::Result<ExitStatus> {
-        self.inner
-            .spawn()
-            .and_then(|mut p| p.wait())
+        self.inner.spawn().and_then(|mut p| p.wait())
     }
 }
 

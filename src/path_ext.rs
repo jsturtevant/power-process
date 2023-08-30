@@ -1,6 +1,12 @@
-use std::{ffi::{OsStr, OsString}, path::PathBuf, io::{self, ErrorKind}, ptr, os::windows::prelude::OsStrExt};
-use std::path::Path;
 use crate::{c, windows};
+use std::path::Path;
+use std::{
+    ffi::{OsStr, OsString},
+    io::{self, ErrorKind},
+    os::windows::prelude::OsStrExt,
+    path::PathBuf,
+    ptr,
+};
 
 pub const MAIN_SEP_STR: &str = "\\";
 pub const MAIN_SEP: char = '\\';
@@ -21,8 +27,16 @@ pub(crate) fn is_file_name(path: &OsStr) -> bool {
 }
 pub(crate) fn has_trailing_slash(path: &OsStr) -> bool {
     let is_verbatim = path.as_os_str_bytes().starts_with(br"\\?\");
-    let is_separator = if is_verbatim { is_verbatim_sep } else { is_sep_byte };
-    if let Some(&c) = path.as_os_str_bytes().last() { is_separator(c) } else { false }
+    let is_separator = if is_verbatim {
+        is_verbatim_sep
+    } else {
+        is_sep_byte
+    };
+    if let Some(&c) = path.as_os_str_bytes().last() {
+        is_separator(c)
+    } else {
+        false
+    }
 }
 
 /// Appends a suffix to a path.
@@ -91,7 +105,6 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
     }
     None
 }
-
 
 /// Get a normalized absolute path that can bypass path length limits.
 ///

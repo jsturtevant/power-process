@@ -3,20 +3,19 @@
 //!
 //! This module implements the parsing necessary to turn that string into a list of arguments.
 
-
+use crate::c;
+use crate::path_ext::get_long_path;
+use crate::windows::{ensure_no_nuls, to_u16s};
+use crate::wstr::WStrUnits;
+use std::env::current_exe;
 use std::ffi::OsString;
 use std::fmt;
 use std::io;
+use std::iter;
 use std::num::NonZeroU16;
 use std::os::windows::prelude::*;
 use std::path::{Path, PathBuf};
-use crate::path_ext::get_long_path;
-use crate::windows::{ensure_no_nuls, to_u16s};
-use std::env::current_exe;
-use crate::c;
-use crate::wstr::WStrUnits;
 use std::vec;
-use std::iter;
 
 /// This is the const equivalent to `NonZeroU16::new(n).unwrap()`
 ///
@@ -35,10 +34,14 @@ pub fn args() -> Args {
     unsafe {
         let lp_cmd_line = c::GetCommandLineW();
         let parsed_args_list = parse_lp_cmd_line(WStrUnits::new(lp_cmd_line), || {
-            current_exe().map(PathBuf::into_os_string).unwrap_or_else(|_| OsString::new())
+            current_exe()
+                .map(PathBuf::into_os_string)
+                .unwrap_or_else(|_| OsString::new())
         });
 
-        Args { parsed_args_list: parsed_args_list.into_iter() }
+        Args {
+            parsed_args_list: parsed_args_list.into_iter(),
+        }
     }
 }
 
@@ -215,7 +218,14 @@ enum Quote {
 
 pub(crate) fn append_arg(cmd: &mut Vec<u16>, arg: &Arg, force_quotes: bool) -> io::Result<()> {
     let (arg, quote) = match arg {
-        Arg::Regular(arg) => (arg, if force_quotes { Quote::Always } else { Quote::Auto }),
+        Arg::Regular(arg) => (
+            arg,
+            if force_quotes {
+                Quote::Always
+            } else {
+                Quote::Auto
+            },
+        ),
         Arg::Raw(arg) => (arg, Quote::Never),
     };
 
@@ -226,9 +236,10 @@ pub(crate) fn append_arg(cmd: &mut Vec<u16>, arg: &Arg, force_quotes: bool) -> i
     let arg_bytes = arg.as_os_str_bytes();
     let (quote, escape) = match quote {
         Quote::Always => (true, true),
-        Quote::Auto => {
-            (arg_bytes.iter().any(|c| *c == b' ' || *c == b'\t') || arg_bytes.is_empty(), true)
-        }
+        Quote::Auto => (
+            arg_bytes.iter().any(|c| *c == b' ' || *c == b'\t') || arg_bytes.is_empty(),
+            true,
+        ),
         Quote::Never => (false, false),
     };
     if quote {
@@ -277,7 +288,7 @@ pub(crate) fn make_bat_command_line(
     if script.contains(&(b'"' as u16)) || script.last() == Some(&(b'\\' as u16)) {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "Windows file names may not contain `\"` or end with `\\`"
+            "Windows file names may not contain `\"` or end with `\\`",
         ));
     }
     cmd.extend_from_slice(script.strip_suffix(&[0]).unwrap_or(script));
@@ -315,8 +326,8 @@ pub(crate) fn to_user_path(path: &Path) -> io::Result<Vec<u16>> {
     from_wide_to_user_path(to_u16s(path)?)
 }
 pub(crate) fn from_wide_to_user_path(mut path: Vec<u16>) -> io::Result<Vec<u16>> {
-    use std::ptr;
     use crate::windows::fill_utf16_buf;
+    use std::ptr;
 
     // UTF-16 encoded code points, used in parsing and building UTF-16 paths.
     // All of these are in the ASCII range so they can be cast directly to `u16`.

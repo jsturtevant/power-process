@@ -1,7 +1,12 @@
-use std::{mem::MaybeUninit, ffi::OsStr, os::windows::prelude::OsStrExt, io::{self, ErrorKind}, ptr};
+use std::{
+    ffi::OsStr,
+    io::{self, ErrorKind},
+    mem::MaybeUninit,
+    os::windows::prelude::OsStrExt,
+    ptr,
+};
 
 use crate::c;
-
 
 // Many Windows APIs follow a pattern of where we hand a buffer and then they
 // will report back to us how large the buffer should be or how many bytes
@@ -83,7 +88,10 @@ where
 
 pub(crate) fn ensure_no_nuls<T: AsRef<OsStr>>(str: T) -> io::Result<T> {
     if str.as_ref().encode_wide().any(|b| b == 0) {
-        Err(io::Error::new(ErrorKind::InvalidInput, "nul byte found in provided data"))
+        Err(io::Error::new(
+            ErrorKind::InvalidInput,
+            "nul byte found in provided data",
+        ))
     } else {
         Ok(str)
     }
@@ -139,7 +147,6 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
     None
 }
 
-
 pub fn hashmap_random_keys() -> (u64, u64) {
     let mut v = (0, 0);
     let ret = unsafe {
@@ -150,9 +157,12 @@ pub fn hashmap_random_keys() -> (u64, u64) {
             c::BCRYPT_USE_SYSTEM_PREFERRED_RNG,
         )
     };
-    if c::nt_success(ret) { v } else { fallback_rng() }
+    if c::nt_success(ret) {
+        v
+    } else {
+        fallback_rng()
+    }
 }
-
 
 /// Generate random numbers using the fallback RNG function (RtlGenRandom)
 ///
@@ -166,10 +176,17 @@ fn fallback_rng() -> (u64, u64) {
 
     let mut v = (0, 0);
     let ret = unsafe {
-        c::RtlGenRandom(&mut v as *mut _ as *mut c_void, std::mem::size_of_val(&v) as c::ULONG)
+        c::RtlGenRandom(
+            &mut v as *mut _ as *mut c_void,
+            std::mem::size_of_val(&v) as c::ULONG,
+        )
     };
 
-    if ret != 0 { v } else { panic!("fallback RNG broken: {}", io::Error::last_os_error()) }
+    if ret != 0 {
+        v
+    } else {
+        panic!("fallback RNG broken: {}", io::Error::last_os_error())
+    }
 }
 
 /// We can't use RtlGenRandom with UWP, so there is no fallback

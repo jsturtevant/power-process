@@ -1,21 +1,23 @@
-use std::env::consts::{EXE_SUFFIX, EXE_EXTENSION};
-use std::ffi::{OsString, OsStr, c_void};
-use std::os::windows::prelude::{OsStrExt, OsStringExt, RawHandle, OwnedHandle, FromRawHandle, AsRawHandle, IntoRawHandle, AsHandle, HandleOrInvalid};
-use std::process::ExitStatus;
-use std::sync::Mutex;
-use std::{io, env, ptr, mem, fmt};
-use std::path::{Path, PathBuf};
-use crate::args::{Arg, self};
+use crate::args::{self, Arg};
+use crate::env::{CommandEnv, EnvKey};
 use crate::file::{open, OpenOptions};
 use crate::handle::Handle;
-use crate::pipe::{AnonPipe, self};
-use crate::{c, windows};
-use crate::env::{CommandEnv, EnvKey};
-use crate::process::{Process};
 use crate::path_ext;
-use std::collections::BTreeMap;
+use crate::pipe::{self, AnonPipe};
+use crate::process::Process;
+use crate::{c, windows};
 use cvt::cvt;
-
+use std::collections::BTreeMap;
+use std::env::consts::{EXE_EXTENSION, EXE_SUFFIX};
+use std::ffi::{c_void, OsStr, OsString};
+use std::os::windows::prelude::{
+    AsHandle, AsRawHandle, FromRawHandle, HandleOrInvalid, IntoRawHandle, OsStrExt, OsStringExt,
+    OwnedHandle, RawHandle,
+};
+use std::path::{Path, PathBuf};
+use std::process::ExitStatus;
+use std::sync::Mutex;
+use std::{env, fmt, io, mem, ptr};
 
 pub enum Stdio {
     Inherit,
@@ -95,7 +97,8 @@ impl Command {
     }
 
     pub fn raw_arg(&mut self, command_str_to_append: &OsStr) {
-        self.args.push(Arg::Raw(command_str_to_append.to_os_string()))
+        self.args
+            .push(Arg::Raw(command_str_to_append.to_os_string()))
     }
 
     pub fn get_program(&self) -> &OsStr {
@@ -172,14 +175,17 @@ impl Command {
 
         let _guard = CREATE_PROCESS_LOCK.lock();
 
-        let mut pipes = StdioPipes { stdin: None, stdout: None, stderr: None };
+        let mut pipes = StdioPipes {
+            stdin: None,
+            stdout: None,
+            stderr: None,
+        };
         let null = Stdio::Null;
         let default_stdin = if needs_stdin { &default } else { &null };
         let stdin = self.stdin.as_ref().unwrap_or(default_stdin);
         let stdout = self.stdout.as_ref().unwrap_or(&default);
         let stderr = self.stderr.as_ref().unwrap_or(&default);
 
-        
         let stdin = stdin.to_handle(c::STD_INPUT_HANDLE, &mut pipes.stdin)?;
         let stdout = stdout.to_handle(c::STD_OUTPUT_HANDLE, &mut pipes.stdout)?;
         let stderr = stderr.to_handle(c::STD_ERROR_HANDLE, &mut pipes.stderr)?;
@@ -217,7 +223,7 @@ impl Command {
         unsafe {
             Ok((
                 Process {
-                    handle:  OwnedHandle::from_raw_handle(pi.hProcess as RawHandle),
+                    handle: OwnedHandle::from_raw_handle(pi.hProcess as RawHandle),
                     main_thread_handle: OwnedHandle::from_raw_handle(pi.hThread as RawHandle),
                 },
                 pipes,
@@ -296,7 +302,6 @@ impl Stdio {
     }
 }
 
-
 impl fmt::Debug for Command {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.program.fmt(f)?;
@@ -318,13 +323,12 @@ pub struct CommandArgs<'a> {
 // Get `cmd.exe` for use with bat scripts, encoded as a UTF-16 string.
 fn command_prompt() -> io::Result<Vec<u16>> {
     let mut system: Vec<u16> = windows::fill_utf16_buf(
-        |buf, size| unsafe {c::GetSystemDirectoryW(buf, size) },
+        |buf, size| unsafe { c::GetSystemDirectoryW(buf, size) },
         |buf| buf.into(),
     )?;
     system.extend("\\cmd.exe".encode_utf16().chain([0]));
     Ok(system)
 }
-
 
 // Produces a wide string *without terminating null*; returns an error if
 // `prog` or any of the `args` contain a nul.
@@ -347,7 +351,6 @@ fn make_command_line(argv0: &OsStr, args: &[Arg], force_quotes: bool) -> io::Res
     }
     Ok(cmd)
 }
-
 
 fn zeroed_startupinfo() -> c::STARTUPINFOW {
     c::STARTUPINFOW {
@@ -383,7 +386,10 @@ fn zeroed_process_information() -> c::PROCESS_INFORMATION {
 
 pub(crate) fn ensure_no_nuls<T: AsRef<OsStr>>(str: T) -> io::Result<T> {
     if str.as_ref().encode_wide().any(|b| b == 0) {
-        Err(io::Error::new(io::ErrorKind::InvalidInput, "nul byte found in provided data"))
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "nul byte found in provided data",
+        ))
     } else {
         Ok(str)
     }
@@ -426,7 +432,6 @@ fn make_dirp(d: Option<&OsString>) -> io::Result<(*const u16, Vec<u16>)> {
         None => Ok((ptr::null(), Vec::new())),
     }
 }
-
 
 // Resolve `exe_path` to the executable name.
 //

@@ -1,8 +1,7 @@
-
 use std::collections::BTreeMap;
-use std::os::windows::prelude::OsStrExt;
 use std::ffi::{OsStr, OsString};
-use std::{fmt, cmp};
+use std::os::windows::prelude::OsStrExt;
+use std::{cmp, fmt};
 
 #[derive(Clone, Debug, Eq, PartialEq, Default, PartialOrd, Ord)]
 #[doc(hidden)]
@@ -16,7 +15,7 @@ pub(crate) struct EnvKey {
 }
 
 impl EnvKey {
-    pub (crate) fn new<T: Into<OsString>>(key: T) -> Self {
+    pub(crate) fn new<T: Into<OsString>>(key: T) -> Self {
         EnvKey::from(key.into())
     }
 }
@@ -25,7 +24,10 @@ impl EnvKey {
 // they are compared using a caseless string mapping.
 impl From<OsString> for EnvKey {
     fn from(k: OsString) -> Self {
-        EnvKey { utf16: k.encode_wide().collect(), os_string: k }
+        EnvKey {
+            utf16: k.encode_wide().collect(),
+            os_string: k,
+        }
     }
 }
 
@@ -67,14 +69,20 @@ pub struct CommandEnv {
 
 impl Default for CommandEnv {
     fn default() -> Self {
-        CommandEnv { clear: false, saw_path: false, vars: Default::default() }
+        CommandEnv {
+            clear: false,
+            saw_path: false,
+            vars: Default::default(),
+        }
     }
 }
 
 impl fmt::Debug for CommandEnv {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug_command_env = f.debug_struct("CommandEnv");
-        debug_command_env.field("clear", &self.clear).field("vars", &self.vars);
+        debug_command_env
+            .field("clear", &self.clear)
+            .field("vars", &self.vars);
         debug_command_env.finish()
     }
 }
@@ -103,7 +111,11 @@ impl CommandEnv {
     }
 
     pub(crate) fn capture_if_changed(&self) -> Option<BTreeMap<EnvKey, OsString>> {
-        if self.is_unchanged() { None } else { Some(self.capture()) }
+        if self.is_unchanged() {
+            None
+        } else {
+            Some(self.capture())
+        }
     }
 
     // The following functions build up changes

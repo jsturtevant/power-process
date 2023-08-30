@@ -382,10 +382,7 @@ impl<'a> Read for &'a Handle {
         (**self).read(buf)
     }
 
-   
-
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         (**self).read_vectored(bufs)
     }
-
 }

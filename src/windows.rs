@@ -1,7 +1,7 @@
 use std::{
     ffi::OsStr,
     io::{self, ErrorKind},
-    mem::{MaybeUninit, self},
+    mem::{self, MaybeUninit},
     os::windows::prelude::OsStrExt,
 };
 
@@ -34,7 +34,8 @@ where
     // https://github.com/dylni/normpath/issues/5
     //
     // note inlined #[unstable(feature = "maybe_uninit_uninit_array", issue = "96097")]
-    let mut stack_buf: [MaybeUninit<u16>; 512] = unsafe { MaybeUninit::<[MaybeUninit<u16>; 512]>::uninit().assume_init() };
+    let mut stack_buf: [MaybeUninit<u16>; 512] =
+        unsafe { MaybeUninit::<[MaybeUninit<u16>; 512]>::uninit().assume_init() };
     let mut heap_buf: Vec<MaybeUninit<u16>> = Vec::new();
     unsafe {
         let mut n = stack_buf.len();
@@ -160,7 +161,7 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
 }
 
 // inlined for #![feature(strict_provenance)]
-pub fn addr<T: ?Sized>(t: *const T ) -> usize {
+pub fn addr<T: ?Sized>(t: *const T) -> usize {
     // FIXME(strict_provenance_magic): I am magic and should be a compiler intrinsic.
     // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
     // provenance).

@@ -14,7 +14,6 @@ use std::os::windows::prelude::*;
 use std::path::Path;
 use std::vec;
 
-
 pub struct Args {
     parsed_args_list: vec::IntoIter<OsString>,
 }
@@ -154,9 +153,12 @@ pub(crate) fn make_bat_command_line(
         // * `|<>` pipe/redirect characters.
         const SPECIAL: &[u8] = b"\t &()[]{}^=;!'+,`~%|<>";
         let force_quotes = match arg {
-            Arg::Regular(arg) if !force_quotes => {
-                arg.to_str().unwrap().as_bytes().iter().any(|c| SPECIAL.contains(c))
-            }
+            Arg::Regular(arg) if !force_quotes => arg
+                .to_str()
+                .unwrap()
+                .as_bytes()
+                .iter()
+                .any(|c| SPECIAL.contains(c)),
             _ => force_quotes,
         };
         append_arg(&mut cmd, arg, force_quotes)?;

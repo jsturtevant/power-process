@@ -73,7 +73,7 @@ impl OpenOptions {
     pub fn share_mode(&mut self, share_mode: u32) {
         self.share_mode = share_mode;
     }
-   
+
     pub fn security_attributes(&mut self, attrs: c::LPSECURITY_ATTRIBUTES) {
         self.security_attributes = attrs;
     }

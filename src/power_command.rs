@@ -1,8 +1,8 @@
 use std::{ffi::OsStr, io, path::Path, process::ExitStatus};
 
 use crate::{
-    command::{Command as InnerCommand, Stdio},
     child::Child,
+    command::{Command as InnerCommand, Stdio},
 };
 
 pub struct Command {

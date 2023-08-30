@@ -21,7 +21,13 @@ pub fn is_verbatim_sep(b: u8) -> bool {
 
 /// Returns true if `path` looks like a lone filename.
 pub(crate) fn is_file_name(path: &OsStr) -> bool {
-    !path.to_str().unwrap().as_bytes().iter().copied().any(is_sep_byte) 
+    !path
+        .to_str()
+        .unwrap()
+        .as_bytes()
+        .iter()
+        .copied()
+        .any(is_sep_byte)
 }
 pub(crate) fn has_trailing_slash(path: &OsStr) -> bool {
     let is_verbatim = path.to_str().unwrap().as_bytes().starts_with(br"\\?\");
@@ -104,7 +110,7 @@ pub fn unrolled_find_u16s(needle: u16, haystack: &[u16]) -> Option<usize> {
     None
 }
 
-pub fn addr<T: ?Sized>(t: *const T ) -> usize {
+pub fn addr<T: ?Sized>(t: *const T) -> usize {
     // FIXME(strict_provenance_magic): I am magic and should be a compiler intrinsic.
     // SAFETY: Pointer-to-integer transmutes are valid (if you are okay with losing the
     // provenance).

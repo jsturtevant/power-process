@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 use crate::args::{self, Arg};
+use crate::child::Child;
 use crate::env::{CommandEnv, EnvKey};
 use crate::file::{open, OpenOptions};
 use crate::handle::Handle;
 use crate::path_ext;
 use crate::pipe::{self, AnonPipe};
-use crate::child::Child;
 use crate::{c, windows};
 use cvt::cvt;
 use std::collections::BTreeMap;

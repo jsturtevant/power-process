@@ -7,7 +7,7 @@ use crate::file::{open, OpenOptions};
 use crate::handle::{Handle, IntoInner};
 use crate::windows::hashmap_random_keys;
 use std::ffi::OsStr;
-use std::io::{self,Read};
+use std::io::{self, Read};
 use std::mem;
 use std::path::Path;
 use std::ptr;
@@ -270,8 +270,6 @@ impl AnonPipe {
         }
     }
 
-
-
     pub fn read_to_end(&self, buf: &mut Vec<u8>) -> io::Result<usize> {
         self.handle().read_to_end(buf)
     }
@@ -282,7 +280,6 @@ impl AnonPipe {
             self.alertable_io_internal(c::WriteFileEx, buf.as_ptr() as _, len)
         }
     }
-
 
     /// Synchronizes asynchronous reads or writes using our anonymous pipe.
     ///

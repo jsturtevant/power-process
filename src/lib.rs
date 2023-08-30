@@ -1,12 +1,12 @@
 mod args;
 mod c;
+mod child;
 mod command;
 mod env;
 mod file;
 mod handle;
 mod path_ext;
 mod pipe;
-mod child;
 pub mod power_command;
 mod windows;
 

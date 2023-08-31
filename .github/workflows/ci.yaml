@@ -31,3 +31,5 @@ jobs:
           cargo check
       - name: Tests
         run: cargo test
+      - name: Run Examples
+        run: cargo run --example job
